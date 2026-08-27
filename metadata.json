@@ -1,0 +1,6 @@
+{
+  "name": "FieldAssist Pre-Onboarding Platform",
+  "description": "Pre-Onboarding Platform for FieldAssist featuring a personalized Candidate Portal, HR Dashboard, and automated 3-tab Google Sheets synchronization across Candidate Master, Details & Documents, and Personal & Interests.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,28 @@
+{
+  "entities": {
+    "candidates": {
+      "title": "Candidates",
+      "description": "Candidates undergoing pre-onboarding",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "accessCode": { "type": "string" },
+        "joiningDate": { "type": "string" },
+        "formData": { "type": "object" },
+        "documents": { "type": "array" },
+        "formStatus": { "type": "string" },
+        "resumeUrl": { "type": "string" },
+        "resumeFileName": { "type": "string" },
+        "resumeUploadedAt": { "type": "string" },
+        "offerLetterUrl": { "type": "string" },
+        "offerLetterFileName": { "type": "string" },
+        "offerLetterUploadedAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "email"]
+    }
+  }
+}
