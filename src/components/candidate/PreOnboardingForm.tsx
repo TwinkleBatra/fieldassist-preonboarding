@@ -494,10 +494,10 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <Sparkles className="w-5 h-5 text-purple-700" />
                   SECTION 1 — Welcome
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">FieldAssist Pre-Onboarding Form</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">FieldAssist Pre-Onboarding Form</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
-                1 of 10
+                1 of 9
               </span>
             </div>
 
@@ -508,7 +508,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                 </div>
                 <div>
                   <h4 className="text-base font-extrabold text-purple-950">Welcome to FieldAssist!</h4>
-                  <p className="text-xs text-purple-800/90 mt-1 leading-relaxed">
+                  <p className="text-sm text-purple-900/90 mt-1.5 leading-relaxed font-normal">
                     We are thrilled to welcome you to our team. Please take a few minutes to complete this pre-onboarding form. This helps us ensure a seamless joining experience, prepare your IT credentials, verify statutory records, and finalize your Day 1 schedule.
                   </p>
                 </div>
@@ -554,10 +554,10 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <User className="w-5 h-5 text-purple-700" />
                   SECTION 2 — Personal Details
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Provide your legal identity, contact info, and sizing preferences.</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Provide your legal identity, contact info, and sizing preferences.</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
-                2 of 10
+                2 of 9
               </span>
             </div>
 
@@ -868,10 +868,10 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <Heart className="w-5 h-5 text-purple-700" />
                   SECTION 3 — Get to Know You
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Help us introduce you to the team!</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Help us introduce you to the team!</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
-                3 of 10
+                3 of 9
               </span>
             </div>
 
@@ -880,7 +880,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                 <label className="block text-xs font-extrabold text-slate-900">
                   What's one thing you're passionate about and could talk about for hours? *
                 </label>
-                <p className="text-[11px] text-slate-500 italic">
+                <p className="text-xs font-normal text-slate-600 italic">
                   Example: cafes, books, travel, fitness, movies, photography etc.
                 </p>
                 <textarea
@@ -898,7 +898,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                 <label className="block text-xs font-extrabold text-slate-900">
                   What's one hobby or community activity you'd love to make time for? *
                 </label>
-                <p className="text-[11px] text-slate-500 italic">
+                <p className="text-xs font-normal text-slate-600 italic">
                   Example: social service, theatre, volunteering, music, dance or sports
                 </p>
                 <textarea
@@ -924,10 +924,10 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <PhoneCall className="w-5 h-5 text-purple-700" />
                   SECTION 4 — Emergency Contact Details
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Provide a primary family or emergency contact.</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Provide a primary family or emergency contact.</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
-                4 of 10
+                4 of 9
               </span>
             </div>
 
@@ -983,7 +983,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <GraduationCap className="w-5 h-5 text-purple-700" />
                   SECTION 5 — Education Details
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Academic qualifications and highest degree information.</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Academic qualifications and highest degree information.</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
                 5 of 9
@@ -1042,7 +1042,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <Briefcase className="w-5 h-5 text-purple-700" />
                   SECTION 6 — Employment Details
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Details regarding your career background and work history.</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Details regarding your career background and work history.</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
                 6 of 9
@@ -1121,7 +1121,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <Camera className="w-5 h-5 text-purple-700" />
                   SECTION 7 — Identity Details
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Statutory numbers and required document uploads (stored in Firebase Storage).</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Statutory numbers and required document uploads (stored in Firebase Storage).</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
                 7 of 9
@@ -1398,7 +1398,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <Calendar className="w-5 h-5 text-purple-700" />
                   SECTION 8 — Joining Information
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Confirm your scheduled joining date and readiness.</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Confirm your scheduled joining date and readiness.</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
                 8 of 9
@@ -1482,7 +1482,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
                   <ShieldCheck className="w-5 h-5 text-purple-700" />
                   SECTION 9 — Declaration
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Review statement and execute final submission.</p>
+                <p className="text-sm font-medium text-slate-600 mt-1">Review statement and execute final submission.</p>
               </div>
               <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
                 9 of 9
