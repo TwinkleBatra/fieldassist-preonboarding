@@ -33,30 +33,56 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
 
   const [isHrbpManuallyOverridden, setIsHrbpManuallyOverridden] = useState<boolean>(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: '',
-    department: initialDept,
-    joiningDate: '',
-    reportingTime: defaultLoc?.reportingTime || '10:30 AM',
-    timeZone: defaultLoc?.timeZone || 'IST (UTC+5:30)',
-    officeCity: defaultLoc?.city || 'Gurugram',
-    officeCountry: defaultLoc?.country || 'India',
-    officeAddress: defaultLoc?.officeAddress || '',
-    dressCode: (defaultLoc?.dressCode || 'Smart Casuals') as DressCodeType,
-    lunchInfo: defaultLoc?.lunchInfo || '',
-    reportingManager: '',
-    reportingManagerRole: '',
-    hrbpName: initialHrbp.name,
-    hrbpRole: initialHrbp.role,
-    hrbpEmail: initialHrbp.email,
-    hrbpPhone: initialHrbp.phone,
-    hrbpAvatarUrl: initialHrbp.avatarUrl,
-    status: 'Offer Accepted' as Candidate['status'],
-    notes: ''
-  });
+  const getInitialFormData = (loc?: JoiningLocation) => {
+    const targetLoc = loc || locations[0];
+    const targetDept = 'Engineering & Technology';
+    const autoHrbp = getHRBPForDepartment(targetDept);
+    return {
+      name: '',
+      email: '',
+      phone: '',
+      role: '',
+      department: targetDept,
+      joiningDate: '',
+      reportingTime: targetLoc?.reportingTime || '10:30 AM',
+      timeZone: targetLoc?.timeZone || 'IST (UTC+5:30)',
+      officeCity: targetLoc?.city || 'Gurugram',
+      officeCountry: targetLoc?.country || 'India',
+      officeAddress: targetLoc?.officeAddress || '',
+      dressCode: (targetLoc?.dressCode || 'Smart Casuals') as DressCodeType,
+      lunchInfo: targetLoc?.lunchInfo || '',
+      reportingManager: '',
+      reportingManagerRole: '',
+      hrbpName: autoHrbp.name,
+      hrbpRole: autoHrbp.role,
+      hrbpEmail: autoHrbp.email,
+      hrbpPhone: autoHrbp.phone,
+      hrbpAvatarUrl: autoHrbp.avatarUrl,
+      status: 'Offer Accepted' as Candidate['status'],
+      notes: ''
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData(defaultLoc));
+
+  const resetFormState = () => {
+    const targetLoc = locations[0];
+    setWorkMode('Office');
+    setSelectedLocationId(targetLoc?.id || '');
+    setRemoteCountry('');
+    setRemoteCity('');
+    setRemoteTimeZone('IST (UTC+5:30)');
+    setRemoteInstructions('');
+    setIsHrbpManuallyOverridden(false);
+    setFormData(getInitialFormData(targetLoc));
+  };
+
+  // Reset form whenever modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      resetFormState();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (locations.length > 0 && !selectedLocationId) {
@@ -205,6 +231,12 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       });
     }
 
+    resetFormState();
+    onClose();
+  };
+
+  const handleCloseModal = () => {
+    resetFormState();
     onClose();
   };
 
@@ -226,7 +258,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -622,7 +654,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
           <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCloseModal}
               className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer"
             >
               Cancel
