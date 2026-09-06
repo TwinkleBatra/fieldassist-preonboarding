@@ -1,7 +1,9 @@
-import React from 'react';
-import { Calendar, Clock, MapPin, Shirt, Utensils, Phone, Mail, MessageSquare, CheckSquare, ExternalLink, ShieldCheck, User, Globe, Laptop } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Clock, MapPin, Shirt, Utensils, Phone, Mail, MessageSquare, CheckSquare, ExternalLink, ShieldCheck, User, Globe, Laptop, Copy, Check, Users } from 'lucide-react';
 import { Candidate } from '../../types';
 import { formatJoiningDate } from '../../utils/dateUtils';
+import { toTitleCase } from '../../utils/textUtils';
+import { getPrimaryContactForCandidate, getHRBPForDepartment } from '../../utils/hrbp';
 
 interface FirstDayInfoProps {
   candidate: Candidate;
@@ -10,6 +12,18 @@ interface FirstDayInfoProps {
 
 export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenContactHR }) => {
   const isRemote = candidate.workMode === 'Remote';
+  const primaryContactInfo = getPrimaryContactForCandidate(candidate);
+  const activeContact = primaryContactInfo.contact;
+  const assignedHrbp = candidate.hrbp || getHRBPForDepartment(candidate.department);
+
+  const [copiedHrbpEmail, setCopiedHrbpEmail] = useState(false);
+
+  const handleCopyHrbpEmail = () => {
+    if (!assignedHrbp?.email) return;
+    navigator.clipboard.writeText(assignedHrbp.email);
+    setCopiedHrbpEmail(true);
+    setTimeout(() => setCopiedHrbpEmail(false), 2000);
+  };
 
   const formattedJoiningDate = formatJoiningDate(candidate.joiningDate, {
     weekday: 'long',
@@ -146,35 +160,82 @@ export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenCon
           </div>
         </div>
 
-        {/* Dedicated HR Contact */}
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-200/80 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">Your HR Contact</span>
-              <span className="text-[10px] font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full">Dedicated HRBP</span>
+        {/* Contact Column: Primary HR Contact + Assigned HRBP Reference */}
+        <div className="flex flex-col gap-3">
+          {/* Dedicated HR Contact */}
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-200/80 shadow-xs flex flex-col justify-between flex-1">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">{primaryContactInfo.cardTitle}</span>
+                <span className="text-[10px] font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full">{primaryContactInfo.contactTypeBadge}</span>
+              </div>
+              
+              <div className="flex items-center gap-3 mt-3">
+                <img
+                  src={activeContact.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'}
+                  alt={activeContact.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-purple-300 shadow-xs"
+                />
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">{toTitleCase(activeContact.name)}</h4>
+                  <p className="text-xs text-purple-700 font-medium">{activeContact.role}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{activeContact.email}</p>
+                </div>
+              </div>
             </div>
-            
-            <div className="flex items-center gap-3 mt-3">
-              <img
-                src={candidate.hrbp.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'}
-                alt={candidate.hrbp.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-purple-300 shadow-xs"
-              />
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">{candidate.hrbp.name}</h4>
-                <p className="text-xs text-purple-700 font-medium">{candidate.hrbp.role}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">{candidate.hrbp.email}</p>
+
+            <button
+              onClick={onOpenContactHR}
+              className="mt-4 w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Send Message to Twinkle</span>
+            </button>
+          </div>
+
+          {/* Assigned HRBP (Reference Only - Plain Text Display) */}
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 shadow-xs">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-slate-500" />
+                Assigned HRBP
+              </span>
+              <span className="text-[10px] font-semibold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                Reference Only
+              </span>
+            </div>
+
+            <div className="space-y-1 text-xs">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-bold text-slate-900">{toTitleCase(assignedHrbp.name)}</span>
+                <span className="text-[11px] text-slate-500 truncate max-w-[140px]">{candidate.department || assignedHrbp.role}</span>
+              </div>
+              
+              <div className="flex items-center justify-between gap-2 pt-1.5 mt-1 border-t border-slate-200/60">
+                <span className="text-[11px] text-slate-600 font-mono truncate select-all" title={assignedHrbp.email}>
+                  {assignedHrbp.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyHrbpEmail}
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 hover:text-purple-800 bg-white hover:bg-purple-50 border border-purple-200 px-2 py-1 rounded transition cursor-pointer shrink-0"
+                  title="Copy HRBP email address"
+                >
+                  {copiedHrbpEmail ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span className="text-emerald-700 font-bold">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      <span>Copy Email</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
-
-          <button
-            onClick={onOpenContactHR}
-            className="mt-4 w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Send Message to {candidate.hrbp.name.split(' ')[0]}</span>
-          </button>
         </div>
 
       </div>

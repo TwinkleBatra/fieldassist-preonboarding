@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Building2, Laptop, Globe, Plus, MapPin, UserCheck, ShieldCheck, Mail, Phone, Sparkles, FileText } from 'lucide-react';
 import { Candidate, DressCodeType, JoiningLocation, WorkMode } from '../../types';
 import { getHRBPForDepartment, LIST_OF_OFFICIAL_HRBPS, DEPARTMENT_OPTIONS, OFFICIAL_HRBPS } from '../../utils/hrbp';
+import { toTitleCase } from '../../utils/textUtils';
 
 interface AddCandidateModalProps {
   isOpen: boolean;
@@ -176,7 +177,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
         return;
       }
       onAddCandidate({
-        name: formData.name,
+        name: toTitleCase(formData.name.trim()),
         email: formData.email,
         phone: formData.phone || '+91 98765 00000',
         role: formData.role,
@@ -205,7 +206,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
     } else {
       const matchedLoc = locations.find(l => l.id === selectedLocationId) || locations[0];
       onAddCandidate({
-        name: formData.name,
+        name: toTitleCase(formData.name.trim()),
         email: formData.email,
         phone: formData.phone || '+91 98765 00000',
         role: formData.role,

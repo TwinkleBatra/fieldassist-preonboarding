@@ -1,4 +1,16 @@
-import { HRContact } from '../types';
+import { HRContact, Candidate } from '../types';
+import { toTitleCase } from './textUtils';
+
+export const PRIMARY_HR_CONTACT: HRContact = {
+  name: 'Twinkle Verma',
+  role: 'HR',
+  email: 'twinkle.verma@flick2know.com',
+  phone: '+91 98100 12345',
+  whatsapp: '+91 98100 12345',
+  avatarUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80'
+};
+
+export const PRE_ONBOARDING_HR_CONTACT: HRContact = PRIMARY_HR_CONTACT;
 
 export const OFFICIAL_HRBPS: Record<string, HRContact> = {
   tanvi: {
@@ -96,3 +108,34 @@ export function getHRBPForDepartment(dept: string): HRContact {
 
   return { ...OFFICIAL_HRBPS.khushboo };
 }
+
+export interface PrimaryContactInfo {
+  contact: HRContact;
+  contactTypeBadge: string;
+  cardTitle: string;
+  buttonLabel: string;
+  heroButtonLabel: string;
+  modalHeader: string;
+  modalSubHeader: string;
+  faqNoticeText: string;
+  faqButtonLabel: string;
+}
+
+/**
+ * Returns the fixed primary contact for the candidate portal:
+ * Primary contact action stays fixed to HR (Twinkle Verma) always — before AND after Day 1.
+ */
+export function getPrimaryContactForCandidate(_candidate?: Candidate | null): PrimaryContactInfo {
+  return {
+    contact: PRIMARY_HR_CONTACT,
+    contactTypeBadge: 'HR',
+    cardTitle: 'Your HR Contact',
+    buttonLabel: 'Send Message to Twinkle',
+    heroButtonLabel: 'Send Message to Twinkle',
+    modalHeader: 'Contact HR',
+    modalSubHeader: 'Ask Twinkle Verma',
+    faqNoticeText: 'Reach out directly to your HR contact (Twinkle Verma).',
+    faqButtonLabel: 'Ask HR'
+  };
+}
+

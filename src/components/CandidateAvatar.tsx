@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Candidate, CandidateFormData, RequiredDocument } from '../types';
 import { getCandidatePhotoUrl, getInitials, getAvatarColorClass } from '../utils/avatarUtils';
+import { toTitleCase } from '../utils/textUtils';
 
 interface CandidateAvatarProps {
   candidate?: Partial<Candidate> | null;
@@ -29,7 +30,7 @@ export const CandidateAvatar: React.FC<CandidateAvatarProps> = ({
 }) => {
   const [hasImageError, setHasImageError] = useState(false);
 
-  const candidateName = explicitName || candidate?.name || 'Candidate';
+  const candidateName = toTitleCase(explicitName || candidate?.name || 'Candidate');
   const resolvedPhotoUrl = explicitPhotoUrl !== undefined ? explicitPhotoUrl : getCandidatePhotoUrl(candidate);
 
   // Reset error state if URL changes

@@ -45,11 +45,11 @@ function loadStoredSheetsConfig(): GoogleSheetsSyncConfig {
     console.warn("Could not load stored sheets config from disk:", err);
   }
   return {
-    spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID || "",
+    spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID || "17UxO1djDD-IvD3JmVzaVoOyyo8TEYcT9cnDii7sjUI0",
     spreadsheetUrl: process.env.GOOGLE_SPREADSHEET_ID
       ? `https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SPREADSHEET_ID}/edit`
-      : "",
-    webhookUrl: process.env.GOOGLE_APPS_SCRIPT_URL || "",
+      : "https://docs.google.com/spreadsheets/d/17UxO1djDD-IvD3JmVzaVoOyyo8TEYcT9cnDii7sjUI0/edit",
+    webhookUrl: process.env.GOOGLE_APPS_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbxSc3zPy8ZG8YITC9rvGtw-Xk_pLhLSJrL_ot8kcSWATiM5V8Qu8jxY-s5Uei_sq5E/exec",
     syncMode: "webhook",
     lastSyncedAt: "",
     autoSyncEnabled: true,

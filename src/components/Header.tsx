@@ -2,6 +2,7 @@ import React from 'react';
 import { Users, User, ShieldCheck, ChevronDown, Sparkles, LogOut, Key, Link2 } from 'lucide-react';
 import { Candidate } from '../types';
 import { CandidateAvatar } from './CandidateAvatar';
+import { toTitleCase } from '../utils/textUtils';
 
 interface HeaderProps {
   activeView: 'candidate' | 'hr';
@@ -59,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex items-center gap-2 bg-purple-50 border border-purple-200/80 rounded-xl px-3 py-1.5 text-xs">
                 <CandidateAvatar candidate={activeCandidate} size="xs" />
                 <div className="hidden sm:block">
-                  <span className="font-bold text-slate-900 block leading-tight">{activeCandidate.name}</span>
+                  <span className="font-bold text-slate-900 block leading-tight">{toTitleCase(activeCandidate.name)}</span>
                   <span className="text-[10px] text-purple-700 font-mono font-bold block">{activeCandidate.accessCode || 'FA-1001'}</span>
                 </div>
                 <button

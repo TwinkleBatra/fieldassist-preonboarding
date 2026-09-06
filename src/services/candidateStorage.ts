@@ -16,7 +16,8 @@ const STORAGE_KEYS = {
 export const ensureEmailAutomationState = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
   let updated = false;
   const existingAutomation = candidate.emailAutomation;
-  const stagesKeys: EmailStageKey[] = ['welcome_7d', 'culture_5d', 'comm_3d', 'day1_1d'];
+  const stagesKeys: EmailStageKey[] = ['account_ready', 'welcome_7d', 'culture_5d', 'comm_3d', 'day1_1d'];
+  const todayStr = new Date().toISOString().split('T')[0];
   
   const newStages: Record<EmailStageKey, EmailStageLog> = existingAutomation?.stages
     ? { ...existingAutomation.stages }
@@ -24,8 +25,10 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
 
   for (const key of stagesKeys) {
     const tpl = EMAIL_TEMPLATES[key];
-    const targetDate = calculateTargetDate(candidate.joiningDate, tpl.daysBeforeJoining);
     const existingLog = newStages[key];
+    const targetDate = key === 'account_ready'
+      ? (existingLog?.targetDate || todayStr)
+      : calculateTargetDate(candidate.joiningDate, tpl.daysBeforeJoining);
 
     if (!existingLog) {
       updated = true;
@@ -39,17 +42,22 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
         recipientName: candidate.name,
         subject: tpl.subject,
         status: 'Pending',
-        logs: [`Scheduled for ${targetDate} (Automated 7/5/3-day timeline)`]
+        logs: [key === 'account_ready' ? 'Immediate on candidate creation' : `Scheduled for ${targetDate} (Automated 7/5/3-day timeline)`]
       };
     } else {
       if (existingLog.targetDate !== targetDate || existingLog.recipientEmail !== candidate.email || existingLog.subject !== tpl.subject) {
         updated = true;
+        const currentLogs = Array.isArray(existingLog.logs) ? [...existingLog.logs] : [];
+        if (existingLog.targetDate !== targetDate) {
+          currentLogs.push(`Rescheduled to ${targetDate} (Joining date updated to ${candidate.joiningDate})`);
+        }
         newStages[key] = {
           ...existingLog,
           targetDate,
           recipientEmail: candidate.email,
           recipientName: candidate.name,
-          subject: tpl.subject
+          subject: tpl.subject,
+          logs: currentLogs
         };
       }
     }
@@ -137,6 +145,16 @@ export const ensureLatestSchedule = (candidate: Candidate): { candidate: Candida
     };
   }
 
+  return { candidate, updated: false };
+};
+
+export const ensureUpcomingJoiningDate = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
+  if (candidate.id === 'cand-4' && candidate.joiningDate === '2026-08-25') {
+    return { candidate: { ...candidate, joiningDate: '2026-09-18' }, updated: true };
+  }
+  if (candidate.id === 'cand-5' && candidate.joiningDate === '2026-09-01') {
+    return { candidate: { ...candidate, joiningDate: '2026-09-25' }, updated: true };
+  }
   return { candidate, updated: false };
 };
 
@@ -328,10 +346,11 @@ export const getCandidates = (): Candidate[] => {
     }
 
     const enriched = enrichCandidateWithLocation(currentCand, locations);
-    const { candidate: codeUpdatedCand, updated: codeUpdated } = ensureAccessCode(enriched);
+    const { candidate: dateUpdatedCand, updated: dateUpdated } = ensureUpcomingJoiningDate(enriched);
+    const { candidate: codeUpdatedCand, updated: codeUpdated } = ensureAccessCode(dateUpdatedCand);
     const { candidate: scheduleUpdatedCand, updated: schedUpdated } = ensureLatestSchedule(codeUpdatedCand);
     const { candidate: autoUpdatedCand, updated: autoUpdated } = ensureEmailAutomationState(scheduleUpdatedCand);
-    if (codeUpdated || schedUpdated || autoUpdated) needsSave = true;
+    if (dateUpdated || codeUpdated || schedUpdated || autoUpdated) needsSave = true;
     return autoUpdatedCand;
   });
 
@@ -577,19 +596,36 @@ export const updateDocumentStatus = (
 
   const lowerDocId = docId.toLowerCase();
 
-  if (fileUrl) {
-    if (lowerDocId.includes('aadhaar') || lowerDocId === 'doc-aadhaar') {
-      updatedFormData.aadhaarDocUrl = fileUrl;
-      if (fileName) updatedFormData.aadhaarDocName = fileName;
-    } else if (lowerDocId.includes('pan') || lowerDocId === 'doc-pan') {
-      updatedFormData.panDocUrl = fileUrl;
-      if (fileName) updatedFormData.panDocName = fileName;
-    } else if (lowerDocId.includes('pro') || lowerDocId === 'doc-photo-pro' || lowerDocId.includes('professional')) {
-      updatedFormData.professionalPhotoUrl = fileUrl;
-      if (fileName) updatedFormData.professionalPhotoName = fileName;
-    } else if (lowerDocId.includes('casual') || lowerDocId === 'doc-photo-casual') {
-      updatedFormData.casualPhotoUrl = fileUrl;
-      if (fileName) updatedFormData.casualPhotoName = fileName;
+  if (fileUrl !== undefined) {
+    if (fileUrl === '') {
+      // Clearing document
+      if (lowerDocId.includes('aadhaar') || lowerDocId === 'doc-aadhaar') {
+        updatedFormData.aadhaarDocUrl = '';
+        updatedFormData.aadhaarDocName = '';
+      } else if (lowerDocId.includes('pan') || lowerDocId === 'doc-pan') {
+        updatedFormData.panDocUrl = '';
+        updatedFormData.panDocName = '';
+      } else if (lowerDocId.includes('pro') || lowerDocId === 'doc-photo-pro' || lowerDocId.includes('professional')) {
+        updatedFormData.professionalPhotoUrl = '';
+        updatedFormData.professionalPhotoName = '';
+      } else if (lowerDocId.includes('casual') || lowerDocId === 'doc-photo-casual') {
+        updatedFormData.casualPhotoUrl = '';
+        updatedFormData.casualPhotoName = '';
+      }
+    } else {
+      if (lowerDocId.includes('aadhaar') || lowerDocId === 'doc-aadhaar') {
+        updatedFormData.aadhaarDocUrl = fileUrl;
+        if (fileName) updatedFormData.aadhaarDocName = fileName;
+      } else if (lowerDocId.includes('pan') || lowerDocId === 'doc-pan') {
+        updatedFormData.panDocUrl = fileUrl;
+        if (fileName) updatedFormData.panDocName = fileName;
+      } else if (lowerDocId.includes('pro') || lowerDocId === 'doc-photo-pro' || lowerDocId.includes('professional')) {
+        updatedFormData.professionalPhotoUrl = fileUrl;
+        if (fileName) updatedFormData.professionalPhotoName = fileName;
+      } else if (lowerDocId.includes('casual') || lowerDocId === 'doc-photo-casual') {
+        updatedFormData.casualPhotoUrl = fileUrl;
+        if (fileName) updatedFormData.casualPhotoName = fileName;
+      }
     }
   }
 
@@ -606,8 +642,8 @@ export const updateDocumentStatus = (
       return {
         ...doc,
         status: newStatus,
-        fileUrl: fileUrl || doc.fileUrl,
-        uploadedAt: newStatus === 'Uploaded' || newStatus === 'Verified' ? new Date().toISOString().split('T')[0] : doc.uploadedAt
+        fileUrl: fileUrl !== undefined ? (fileUrl === '' ? undefined : fileUrl) : doc.fileUrl,
+        uploadedAt: newStatus === 'Uploaded' || newStatus === 'Verified' ? new Date().toISOString().split('T')[0] : (fileUrl === '' ? undefined : doc.uploadedAt)
       };
     }
     return doc;
@@ -724,8 +760,128 @@ export const addCandidate = (newCandidateData: Omit<Candidate, 'id' | 'formData'
     schedule: loc?.defaultSchedule || DEFAULT_FIELDASSIST_SCHEDULE
   };
 
-  saveCandidate(fullCandidate);
-  return fullCandidate;
+  const { candidate: withAutomation } = ensureEmailAutomationState(fullCandidate);
+  saveCandidate(withAutomation);
+  return withAutomation;
+};
+
+export interface CandidateCoreDetailsUpdate {
+  name: string;
+  email: string;
+  phone: string;
+  joiningDate: string;
+  workMode: 'Office' | 'Remote';
+  role: string;
+  department: string;
+  reportingManager?: string;
+  reportingManagerRole?: string;
+  hrbp?: Candidate['hrbp'];
+  locationId?: string;
+  officeCity?: string;
+  officeCountry?: string;
+  officeAddress?: string;
+  reportingTime?: string;
+  timeZone?: string;
+  remoteCountry?: string;
+  remoteCity?: string;
+  remoteTimeZone?: string;
+  remoteInstructions?: string;
+  googleMapsUrl?: string;
+  dressCode?: Candidate['dressCode'];
+  lunchInfo?: string;
+  firstDayInstructions?: string;
+  notes?: string;
+  status?: Candidate['status'];
+}
+
+export const updateCandidateCoreDetails = (
+  candidateId: string,
+  updates: CandidateCoreDetailsUpdate
+): Candidate => {
+  const candidate = getCandidateById(candidateId);
+  if (!candidate) throw new Error(`Candidate with ID ${candidateId} not found`);
+
+  const locations = getLocations();
+  const isRemote = updates.workMode === 'Remote';
+  const workMode = isRemote ? 'Remote' : 'Office';
+
+  let loc = !isRemote ? locations.find(l => l.id === updates.locationId) : undefined;
+  if (!isRemote && !loc && updates.officeCity) {
+    loc = locations.find(l => l.city.toLowerCase() === updates.officeCity?.toLowerCase());
+  }
+
+  const city = isRemote ? (updates.remoteCity || updates.officeCity || 'Remote') : (loc?.city || updates.officeCity || 'Gurugram');
+  const country = isRemote ? (updates.remoteCountry || updates.officeCountry || 'Global') : (loc?.country || updates.officeCountry || 'India');
+  const timeZone = isRemote ? (updates.remoteTimeZone || updates.timeZone || 'IST (UTC+5:30)') : (loc?.timeZone || updates.timeZone || 'IST (UTC+5:30)');
+  const instructions = isRemote ? (updates.remoteInstructions || updates.firstDayInstructions || 'On Day 1, join the Google Meet welcome session sent by your HR Partner.') : (loc?.firstDayInstructions || updates.firstDayInstructions);
+
+  const assignedHrbp = updates.hrbp || getHRBPForDepartment(updates.department);
+
+  // Update Day 1 milestone date and location description if joining date / work mode updated
+  const updatedMilestones = candidate.milestones.map(m => {
+    if (m.id === 'm-6') {
+      return {
+        ...m,
+        date: updates.joiningDate,
+        description: isRemote ? 'Google Meet Welcome Room' : `Reporting at ${city}`
+      };
+    }
+    return m;
+  });
+
+  const updatedCandidate: Candidate = {
+    ...candidate,
+    name: updates.name.trim(),
+    email: updates.email.trim(),
+    phone: updates.phone.trim(),
+    role: updates.role.trim(),
+    department: updates.department,
+    joiningDate: updates.joiningDate,
+    workMode,
+    locationId: isRemote ? undefined : (loc?.id || updates.locationId),
+    officeCity: city,
+    officeCountry: country,
+    officeAddress: isRemote ? `Remote / Work From Home (${city}, ${country})` : (loc?.officeAddress || updates.officeAddress || candidate.officeAddress),
+    reportingTime: updates.reportingTime || loc?.reportingTime || candidate.reportingTime || '10:30 AM',
+    timeZone: timeZone,
+    googleMapsUrl: isRemote ? undefined : (loc?.googleMapsUrl || updates.googleMapsUrl || candidate.googleMapsUrl),
+    dressCode: isRemote ? 'Smart Casuals' : (updates.dressCode || loc?.dressCode || candidate.dressCode || 'Smart Casuals'),
+    lunchInfo: isRemote ? 'Remote food delivery allowance provided for Day 1' : (updates.lunchInfo || loc?.lunchInfo || candidate.lunchInfo || 'In-house cafeteria with complimentary lunch'),
+    firstDayInstructions: instructions,
+    remoteCountry: isRemote ? country : undefined,
+    remoteCity: isRemote ? city : undefined,
+    remoteTimeZone: isRemote ? timeZone : undefined,
+    remoteInstructions: isRemote ? instructions : undefined,
+    reportingManager: updates.reportingManager || candidate.reportingManager || 'Department Manager',
+    reportingManagerRole: updates.reportingManagerRole || candidate.reportingManagerRole || 'Reporting Lead',
+    hrbp: assignedHrbp,
+    status: updates.status || candidate.status,
+    notes: updates.notes !== undefined ? updates.notes : candidate.notes,
+    formData: {
+      ...candidate.formData,
+      fullName: (!candidate.formData.fullName || candidate.formData.fullName === candidate.name) ? updates.name.trim() : candidate.formData.fullName,
+      email: (!candidate.formData.email || candidate.formData.email === candidate.email) ? updates.email.trim() : candidate.formData.email,
+      phone: (!candidate.formData.phone || candidate.formData.phone === candidate.phone) ? updates.phone.trim() : candidate.formData.phone
+    },
+    milestones: updatedMilestones
+  };
+
+  // Recalculate email automation stages (welcome_7d, culture_5d, comm_3d, day1_1d) based on new joining date
+  const { candidate: withAutomation } = ensureEmailAutomationState(updatedCandidate);
+
+  // Save to localStorage, update Firestore, and background sync to Google Sheets
+  saveCandidate(withAutomation);
+
+  // Sync candidate list with backend email server
+  if (typeof fetch !== 'undefined') {
+    fetch('/api/emails/sync-candidates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ candidates: getCandidates() })
+    }).catch(() => {});
+  }
+
+  return withAutomation;
 };
 
 export const updateCandidateSchedule = (
@@ -761,6 +917,8 @@ export const submitHRQuery = (query: Omit<HRQuery, 'id' | 'createdAt' | 'status'
   
   const newQuery: HRQuery = {
     ...query,
+    recipientName: 'Twinkle Verma',
+    recipientEmail: 'twinkle.verma@flick2know.com',
     id: `query-${Date.now()}`,
     createdAt: new Date().toISOString(),
     status: 'Open'

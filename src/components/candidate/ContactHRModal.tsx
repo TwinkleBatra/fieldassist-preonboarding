@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { X, Send, Phone, Mail, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { X, Send, Phone, Mail, CheckCircle2 } from 'lucide-react';
 import { Candidate } from '../../types';
+import { PRIMARY_HR_CONTACT } from '../../utils/hrbp';
 
 interface ContactHRModalProps {
   candidate: Candidate;
   isOpen: boolean;
   onClose: () => void;
-  onSubmitQuery: (subject: string, message: string) => void;
+  onSubmitQuery: (subject: string, message: string, recipientName?: string, recipientEmail?: string) => void;
 }
 
 export const ContactHRModal: React.FC<ContactHRModalProps> = ({
@@ -19,13 +20,15 @@ export const ContactHRModal: React.FC<ContactHRModalProps> = ({
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  const activeContact = PRIMARY_HR_CONTACT;
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject || !message) return;
     
-    onSubmitQuery(subject, message);
+    onSubmitQuery(subject, message, activeContact.name, activeContact.email);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -42,8 +45,10 @@ export const ContactHRModal: React.FC<ContactHRModalProps> = ({
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-purple-900 to-indigo-900 p-5 text-white flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">Contact HRBP</span>
-            <h3 className="text-base font-bold text-white">Ask {candidate.hrbp.name}</h3>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">
+              Contact HR
+            </span>
+            <h3 className="text-base font-bold text-white">Ask {activeContact.name}</h3>
           </div>
           <button
             onClick={onClose}
@@ -57,22 +62,22 @@ export const ContactHRModal: React.FC<ContactHRModalProps> = ({
         <div className="bg-purple-50/70 p-4 border-b border-purple-100 flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
             <img
-              src={candidate.hrbp.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'}
-              alt={candidate.hrbp.name}
+              src={activeContact.avatarUrl || 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80'}
+              alt={activeContact.name}
               className="w-10 h-10 rounded-full object-cover border border-purple-200"
             />
             <div>
-              <p className="font-bold text-slate-900">{candidate.hrbp.name}</p>
-              <p className="text-purple-700 font-medium">{candidate.hrbp.role}</p>
+              <p className="font-bold text-slate-900">{activeContact.name}</p>
+              <p className="text-purple-700 font-medium">{activeContact.role}</p>
             </div>
           </div>
 
           <div className="text-right space-y-0.5">
-            <a href={`mailto:${candidate.hrbp.email}`} className="text-purple-700 hover:underline flex items-center gap-1 font-semibold text-[11px]">
-              <Mail className="w-3 h-3" /> Email HRBP
+            <a href={`mailto:${activeContact.email}`} className="text-purple-700 hover:underline flex items-center gap-1 font-semibold text-[11px]">
+              <Mail className="w-3 h-3" /> Email HR
             </a>
-            <a href={`tel:${candidate.hrbp.phone}`} className="text-slate-600 hover:text-slate-900 flex items-center gap-1 text-[11px]">
-              <Phone className="w-3 h-3 text-slate-400" /> {candidate.hrbp.phone}
+            <a href={`tel:${activeContact.phone}`} className="text-slate-600 hover:text-slate-900 flex items-center gap-1 text-[11px]">
+              <Phone className="w-3 h-3 text-slate-400" /> {activeContact.phone}
             </a>
           </div>
         </div>
@@ -83,9 +88,9 @@ export const ContactHRModal: React.FC<ContactHRModalProps> = ({
             <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h4 className="text-base font-bold text-slate-900">Message Sent to {candidate.hrbp.name}!</h4>
+            <h4 className="text-base font-bold text-slate-900">Message Sent to {activeContact.name}!</h4>
             <p className="text-xs text-slate-500 max-w-xs mx-auto">
-              Your query has been logged. Your HR BP will respond to your email ({candidate.email}) shortly.
+              Your query has been logged. {activeContact.name} will respond to your email ({candidate.email}) shortly.
             </p>
           </div>
         ) : (

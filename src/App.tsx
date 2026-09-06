@@ -10,10 +10,13 @@ import { CandidateLoginModal } from './components/candidate/CandidateLoginModal'
 import { HRDashboard } from './components/hr/HRDashboard';
 import { CandidateDetailModal } from './components/hr/CandidateDetailModal';
 import { AddCandidateModal } from './components/hr/AddCandidateModal';
+import { EditCandidateModal } from './components/hr/EditCandidateModal';
 import { AddedCandidateSuccessModal } from './components/hr/AddedCandidateSuccessModal';
 import { LocationModal } from './components/hr/LocationModal';
 import { LocationManagerModal } from './components/hr/LocationManagerModal';
 import { HRAuthModal } from './components/hr/HRAuthModal';
+import { PostOnboardingTransitionView } from './components/candidate/PostOnboardingTransitionView';
+import { getCandidateAccessInfo } from './utils/dateUtils';
 import { getHRBPForDepartment } from './utils/hrbp';
 
 import {
@@ -24,6 +27,8 @@ import {
   updateDocumentStatus,
   addCandidate,
   saveCandidate,
+  updateCandidateCoreDetails,
+  CandidateCoreDetailsUpdate,
   deleteCandidate,
   getFAQs,
   submitHRQuery,
@@ -33,6 +38,7 @@ import {
   syncCandidatesWithFirestore,
   updateCandidateSchedule
 } from './services/candidateStorage';
+import { dispatchCandidateEmail } from './services/emailDispatcherService';
 import { Candidate, CandidateFormData, FAQItem, OnboardingStatus, RequiredDocument, JoiningLocation, FirstDayScheduleItem } from './types';
 import { Calendar, ClipboardList, CheckCircle2, HelpCircle, User, MessageSquare } from 'lucide-react';
 
@@ -60,6 +66,7 @@ export default function App() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<JoiningLocation | null>(null);
   const [inspectCandidate, setInspectCandidate] = useState<Candidate | null>(null);
+  const [candidateToEdit, setCandidateToEdit] = useState<Candidate | null>(null);
 
   // Load initial data from storage and check URL parameters for candidate auto-login
   useEffect(() => {
@@ -190,17 +197,35 @@ export default function App() {
     }
   };
 
-  const handleAddCandidate = (candData: Omit<Candidate, 'id' | 'formData' | 'documents' | 'milestones' | 'schedule'>) => {
+  const handleAddCandidate = async (candData: Omit<Candidate, 'id' | 'formData' | 'documents' | 'milestones' | 'schedule'>) => {
     const created = addCandidate(candData);
     setCandidates(getCandidates());
     setNewlyAddedCandidate(created);
+
+    // The moment HR adds a new candidate and clicks Save/Submit, immediately send "Your FieldAssist Account is Ready" email
+    try {
+      await dispatchCandidateEmail(created.id, 'account_ready', {
+        forceResend: true,
+        triggeredBy: 'hr_manual'
+      });
+      const updatedList = getCandidates();
+      setCandidates(updatedList);
+      const updatedCreated = updatedList.find(c => c.id === created.id);
+      if (updatedCreated) {
+        setNewlyAddedCandidate(updatedCreated);
+      }
+    } catch (err) {
+      console.warn('Immediate credential email dispatch notice:', err);
+    }
   };
 
-  const handleSubmitHRQuery = (subject: string, message: string) => {
+  const handleSubmitHRQuery = (subject: string, message: string, recipientName = 'Twinkle Verma', recipientEmail = 'twinkle.verma@flick2know.com') => {
     if (!activeCandidate) return;
     submitHRQuery({
       candidateId: activeCandidate.id,
       candidateName: activeCandidate.name,
+      recipientName,
+      recipientEmail,
       subject,
       message
     });
@@ -294,6 +319,18 @@ export default function App() {
     }
   };
 
+  const handleSaveCandidateCoreDetails = async (candidateId: string, updates: CandidateCoreDetailsUpdate) => {
+    const updated = updateCandidateCoreDetails(candidateId, updates);
+    const refreshed = getCandidates();
+    setCandidates(refreshed);
+    if (inspectCandidate && inspectCandidate.id === candidateId) {
+      setInspectCandidate(refreshed.find(c => c.id === candidateId) || updated);
+    }
+    if (activeCandidateId === candidateId) {
+      setActiveCandidateIdState(updated.id);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       
@@ -315,106 +352,125 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         
         {/* CANDIDATE PORTAL EXPERIENCE */}
-        {activeView === 'candidate' && activeCandidate && (
-          <div className="space-y-6 animate-fadeIn">
-            
-            {/* Welcome Hero Banner */}
-            <WelcomeBanner
-              candidate={activeCandidate}
-              onOpenContactHR={() => setIsContactHROpen(true)}
-              onNavigateToSection={handleNavigateToSection}
-            />
+        {activeView === 'candidate' && activeCandidate && (() => {
+          const accessInfo = getCandidateAccessInfo(activeCandidate.joiningDate);
 
-            {/* Candidate Portal Tab Navigation Bar */}
-            <div className="bg-white rounded-2xl p-1.5 border border-slate-200/80 shadow-xs flex items-center justify-between overflow-x-auto scrollbar-none">
-              <div className="flex items-center space-x-1 w-full">
-                <button
-                  id="tab-first-day-overview"
-                  onClick={() => setCandidateTab('overview')}
-                  className={`flex-1 min-w-[140px] py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    candidateTab === 'overview'
-                      ? 'bg-purple-700 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>First-Day Info</span>
-                </button>
+          // After Day 3 post-joining: show transition message only
+          if (accessInfo.isExpired) {
+            return (
+              <PostOnboardingTransitionView
+                candidate={activeCandidate}
+                onLogout={handleCandidateLogout}
+                onSwitchToHR={() => setActiveView('hr')}
+              />
+            );
+          }
 
-                <button
-                  id="tab-pre-onboarding-form"
-                  onClick={() => setCandidateTab('form')}
-                  className={`flex-1 min-w-[150px] py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    candidateTab === 'form'
-                      ? 'bg-purple-700 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <ClipboardList className="w-4 h-4" />
-                  <span>Pre-Onboarding Form</span>
-                  {activeCandidate.formData.completionPercentage < 100 && (
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  )}
-                </button>
+          return (
+            <div className="space-y-6 animate-fadeIn">
+              {/* Welcome Hero Banner */}
+              <WelcomeBanner
+                candidate={activeCandidate}
+                onNavigateToSection={handleNavigateToSection}
+              />
 
-                <button
-                  id="tab-onboarding-tracker"
-                  onClick={() => setCandidateTab('tracker')}
-                  className={`flex-1 min-w-[140px] py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    candidateTab === 'tracker'
-                      ? 'bg-purple-700 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Status Checklist</span>
-                </button>
-
-                <button
-                  id="tab-faqs"
-                  onClick={() => setCandidateTab('faqs')}
-                  className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    candidateTab === 'faqs'
-                      ? 'bg-purple-700 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  <span>FAQs & Help</span>
-                </button>
+              {/* Candidate Portal Tab Navigation Bar */}
+              <div className="bg-white rounded-2xl p-1.5 border border-slate-200/80 shadow-xs flex items-center justify-between overflow-x-auto scrollbar-none select-none">
+                <div className="flex items-center space-x-1 w-full">
+                  {[
+                    {
+                      id: 'overview' as const,
+                      elementId: 'tab-first-day-overview',
+                      label: 'First-Day Info',
+                      icon: Calendar,
+                      hasBadge: false,
+                    },
+                    {
+                      id: 'form' as const,
+                      elementId: 'tab-pre-onboarding-form',
+                      label: 'Pre-Onboarding Form',
+                      icon: ClipboardList,
+                      hasBadge: activeCandidate.formData.completionPercentage < 100,
+                    },
+                    {
+                      id: 'tracker' as const,
+                      elementId: 'tab-onboarding-tracker',
+                      label: 'Status Checklist',
+                      icon: CheckCircle2,
+                      hasBadge: false,
+                    },
+                    {
+                      id: 'faqs' as const,
+                      elementId: 'tab-faqs',
+                      label: 'FAQs & Help',
+                      icon: HelpCircle,
+                      hasBadge: false,
+                    },
+                  ].map((tab) => {
+                    const isActive = candidateTab === tab.id;
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        id={tab.elementId}
+                        type="button"
+                        onClick={() => setCandidateTab(tab.id)}
+                        className={`flex-1 min-w-[140px] py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer select-none outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 ${
+                          isActive
+                            ? 'bg-purple-700 text-white shadow-xs'
+                            : 'bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                        <span className="select-none">{tab.label}</span>
+                        {tab.hasBadge && (
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              isActive ? 'bg-amber-300' : 'bg-amber-500 animate-pulse'
+                            }`}
+                            title="Form In Progress"
+                            aria-label="Form In Progress"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Active Tab Content */}
+              {candidateTab === 'overview' && (
+                <FirstDayInfo
+                  candidate={activeCandidate}
+                  onOpenContactHR={() => setIsContactHROpen(true)}
+                />
+              )}
+
+              {candidateTab === 'form' && (
+                <PreOnboardingForm
+                  key={activeCandidate.id}
+                  candidate={activeCandidate}
+                  onSaveForm={handleSaveForm}
+                  onUploadDoc={handleUploadDoc}
+                  isReadOnly={accessInfo.isGracePeriod}
+                />
+              )}
+
+              {candidateTab === 'tracker' && (
+                <OnboardingStatusTracker candidate={activeCandidate} />
+              )}
+
+              {candidateTab === 'faqs' && (
+                <CandidateFAQ
+                  faqs={faqs}
+                  candidate={activeCandidate}
+                  onOpenContactHR={() => setIsContactHROpen(true)}
+                />
+              )}
+
             </div>
-
-            {/* Active Tab Content */}
-            {candidateTab === 'overview' && (
-              <FirstDayInfo
-                candidate={activeCandidate}
-                onOpenContactHR={() => setIsContactHROpen(true)}
-              />
-            )}
-
-            {candidateTab === 'form' && (
-              <PreOnboardingForm
-                key={activeCandidate.id}
-                candidate={activeCandidate}
-                onSaveForm={handleSaveForm}
-                onUploadDoc={handleUploadDoc}
-              />
-            )}
-
-            {candidateTab === 'tracker' && (
-              <OnboardingStatusTracker candidate={activeCandidate} />
-            )}
-
-            {candidateTab === 'faqs' && (
-              <CandidateFAQ
-                faqs={faqs}
-                onOpenContactHR={() => setIsContactHROpen(true)}
-              />
-            )}
-
-          </div>
-        )}
+          );
+        })()}
 
         {/* HR DASHBOARD EXPERIENCE */}
         {activeView === 'hr' && (
@@ -432,6 +488,7 @@ export default function App() {
               setCandidates(getCandidates());
             }}
             onDeleteCandidate={handleDeleteCandidate}
+            onOpenEditCandidate={setCandidateToEdit}
           />
         )}
 
@@ -509,6 +566,16 @@ export default function App() {
         onSwitchToCandidateView={handleSwitchToCandidateViewFromHR}
         onUpdateSchedule={handleUpdateSchedule}
         onDeleteCandidate={handleDeleteCandidate}
+        onEditCandidate={setCandidateToEdit}
+      />
+
+      <EditCandidateModal
+        candidate={candidateToEdit}
+        isOpen={Boolean(candidateToEdit)}
+        onClose={() => setCandidateToEdit(null)}
+        locations={locations}
+        onOpenAddLocationModal={handleOpenAddLocation}
+        onSave={handleSaveCandidateCoreDetails}
       />
 
       {/* Footer */}

@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ClipboardList, CheckCircle2, AlertCircle, Save, Send, Upload, FileText, Lock, Sparkles, Check,
   ChevronLeft, ChevronRight, User, Heart, PhoneCall, GraduationCap, Briefcase, FileCheck, Calendar,
   ShieldCheck, Image, Camera, UserCheck, Eye, Trash2, ArrowRight, Mail, Landmark, Building2, CreditCard,
-  Users, Baby, HeartHandshake
+  Users, Baby, HeartHandshake, RefreshCw, Download
 } from 'lucide-react';
 import { Candidate, CandidateFormData } from '../../types';
 import { uploadDocumentToFirebaseStorage } from '../../lib/firebase';
 import { syncDocumentAndCandidate, syncCandidateToGoogleSheets, getGoogleSheetsConfig } from '../../services/googleSheetsSync';
 import { buildSpouseKidsString } from '../../services/sheetsDataFormatters';
+import { toTitleCase } from '../../utils/textUtils';
+import { getCandidateAccessInfo, formatJoiningDate } from '../../utils/dateUtils';
 
 interface PreOnboardingFormProps {
   candidate: Candidate;
   onSaveForm: (formData: Partial<CandidateFormData>, isSubmit: boolean) => void;
   onUploadDoc: (docId: string, status: 'Uploaded' | 'Verified', fileName?: string, fileUrl?: string) => void;
+  isReadOnly?: boolean;
 }
 
 type DocumentUrlKey =
@@ -28,11 +31,23 @@ type DocumentNameKey =
   | 'professionalPhotoName'
   | 'casualPhotoName';
 
+interface DocConfirmAction {
+  type: 'replace' | 'remove';
+  fieldUrlKey: DocumentUrlKey;
+  fieldNameKey: DocumentNameKey;
+  docTitle: string;
+  acceptTypes: string;
+}
+
 export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
   candidate,
   onSaveForm,
-  onUploadDoc
+  onUploadDoc,
+  isReadOnly = false
 }) => {
+  const accessInfo = getCandidateAccessInfo(candidate.joiningDate);
+  const isLockedReadOnly = Boolean(isReadOnly || accessInfo.isGracePeriod || accessInfo.isExpired);
+
   const [currentSection, setCurrentSection] = useState<number>(1);
 
   const handleSectionChange = (sectionNum: number) => {
@@ -53,8 +68,8 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
     ...candidate.formData,
     email: candidate.formData?.email || candidate.email,
     personalEmail: candidate.formData?.personalEmail || candidate.formData?.email || candidate.email,
-    fullName: candidate.formData?.fullName || candidate.name,
-    fullNameAadhaar: candidate.formData?.fullNameAadhaar || candidate.formData?.fullName || candidate.name,
+    fullName: toTitleCase(candidate.formData?.fullName || candidate.name),
+    fullNameAadhaar: toTitleCase(candidate.formData?.fullNameAadhaar || candidate.formData?.fullName || candidate.name),
     phone: candidate.formData?.phone || candidate.phone,
     joiningDate: candidate.formData?.joiningDate || candidate.joiningDate,
     tshirtSize: candidate.formData?.tshirtSize || 'L',
@@ -112,6 +127,21 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
   const [uploadingState, setUploadingState] = useState<Record<string, boolean>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string | null>>({});
   const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [docActionModal, setDocActionModal] = useState<DocConfirmAction | null>(null);
+
+  const aadhaarInputRef = useRef<HTMLInputElement>(null);
+  const panInputRef = useRef<HTMLInputElement>(null);
+  const proPhotoInputRef = useRef<HTMLInputElement>(null);
+  const casualPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  const getFileInputRef = (key: DocumentUrlKey) => {
+    switch (key) {
+      case 'aadhaarDocUrl': return aadhaarInputRef;
+      case 'panDocUrl': return panInputRef;
+      case 'professionalPhotoUrl': return proPhotoInputRef;
+      case 'casualPhotoUrl': return casualPhotoInputRef;
+    }
+  };
 
   // Validation helpers
   const isValidEmail = (email: string) => !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -152,6 +182,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (isLockedReadOnly) return;
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
 
@@ -172,6 +203,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
   };
 
   const handleCopyCurrentToPermanentAddress = () => {
+    if (isLockedReadOnly) return;
     setFormData(prev => ({
       ...prev,
       permanentAddress: prev.currentAddress
@@ -187,6 +219,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
     docSearchTitle: string,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    if (isLockedReadOnly) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -275,8 +308,55 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
     }
   };
 
+  const handleConfirmReplace = () => {
+    if (isLockedReadOnly) return;
+    if (!docActionModal) return;
+    const targetKey = docActionModal.fieldUrlKey;
+    const targetRef = getFileInputRef(targetKey);
+    setDocActionModal(null);
+    if (targetRef?.current) {
+      targetRef.current.value = '';
+      targetRef.current.click();
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (isLockedReadOnly) return;
+    if (!docActionModal) return;
+    const { fieldUrlKey, fieldNameKey, docTitle } = docActionModal;
+    setDocActionModal(null);
+
+    const updated: CandidateFormData = {
+      ...formData,
+      [fieldUrlKey]: '',
+      [fieldNameKey]: '',
+    };
+    updated.completionPercentage = calculateCompletion(updated);
+    setFormData(updated);
+    onSaveForm(updated, false);
+
+    const matchedDoc = candidate.documents.find(d => 
+      d.name.toLowerCase().includes(docTitle.toLowerCase()) ||
+      (fieldUrlKey === 'aadhaarDocUrl' && (d.name.toLowerCase().includes('aadhaar') || d.id === 'doc-aadhaar')) ||
+      (fieldUrlKey === 'panDocUrl' && (d.name.toLowerCase().includes('pan') || d.id === 'doc-pan')) ||
+      (fieldUrlKey === 'professionalPhotoUrl' && (d.name.toLowerCase().includes('professional') || d.id === 'doc-photo-pro')) ||
+      (fieldUrlKey === 'casualPhotoUrl' && (d.name.toLowerCase().includes('casual') || d.id === 'doc-photo-casual'))
+    );
+
+    if (matchedDoc) {
+      onUploadDoc(matchedDoc.id, 'Pending', '', '');
+    } else {
+      const fallbackId = `doc-${fieldUrlKey.replace('Url', '').toLowerCase()}`;
+      onUploadDoc(fallbackId, 'Pending', '', '');
+    }
+
+    setSaveToast(`"${docTitle}" removed successfully.`);
+    setTimeout(() => setSaveToast(null), 3000);
+  };
+
   const handleSaveDraft = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isLockedReadOnly) return;
     const updated = {
       ...formData,
       completionPercentage: calculateCompletion(formData)
@@ -288,6 +368,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
 
   const handleSubmitFinal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLockedReadOnly) return;
 
     if (!formData.declarationAccepted) {
       alert('Please read and check the declaration agreement checkbox in Section 9 before final submission.');
@@ -463,7 +544,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
       )}
 
       {/* Submitted Status Banner */}
-      {formData.isSubmitted && (
+      {formData.isSubmitted && !isLockedReadOnly && (
         <div className="m-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-xs">
@@ -479,6 +560,34 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
           <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 shrink-0">
             Status: Submitted
           </span>
+        </div>
+      )}
+
+      {/* Read-Only Grace Period / Post-Joining Banner */}
+      {isLockedReadOnly && (
+        <div className="m-6 p-4 sm:p-5 bg-amber-50/90 border-2 border-amber-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-amber-600 text-white rounded-xl shadow-xs shrink-0 mt-0.5 sm:mt-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="font-black text-amber-950 text-sm">
+                  Pre-Onboarding Form Locked (Read-Only Mode)
+                </h4>
+                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 bg-amber-200 text-amber-900 rounded-full border border-amber-300">
+                  Active Team Member
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1 leading-relaxed font-medium max-w-2xl">
+                Since your Date of Joining ({formatJoiningDate(candidate.joiningDate)}) has commenced, your pre-onboarding form is now locked to preserve verified records for HR, Payroll, and BGV. You can freely review all submitted details and view or download your attached documents across all sections below.
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 border border-amber-300 rounded-xl text-xs font-bold text-amber-900">
+            <ShieldCheck className="w-4 h-4 text-amber-700" />
+            <span>Editing Disabled</span>
+          </div>
         </div>
       )}
 
@@ -1198,190 +1307,595 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* 1. Aadhaar Card Upload */}
-                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/60 hover:bg-white transition space-y-3">
+                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/70 hover:bg-white transition space-y-3 shadow-2xs">
+                  <input
+                    ref={aadhaarInputRef}
+                    type="file"
+                    accept="image/*,.pdf"
+                    disabled={uploadingState['aadhaarDocUrl']}
+                    onChange={(e) => handleFileUpload('aadhaarDocUrl', 'aadhaarDocName', 'Aadhaar Card', e)}
+                    className="hidden"
+                  />
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-purple-700" />
                       <span className="font-bold text-xs text-slate-900">Aadhaar Card Upload *</span>
                     </div>
                     {formData.aadhaarDocUrl ? (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Uploaded
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                        <Check className="w-3 h-3 text-emerald-600" /> Uploaded
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
                         Required
                       </span>
                     )}
                   </div>
 
-                  {formData.aadhaarDocUrl && (
-                    <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        {formData.aadhaarDocUrl.startsWith('data:image') || formData.aadhaarDocUrl.includes('firebasestorage') ? (
-                          <img src={formData.aadhaarDocUrl} alt="Aadhaar preview" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
-                        ) : (
-                          <FileText className="w-8 h-8 text-purple-600 shrink-0" />
-                        )}
-                        <span className="text-[11px] font-mono text-slate-700 truncate font-semibold">
-                          {formData.aadhaarDocName || 'aadhaar_card.pdf'}
-                        </span>
+                  {uploadingState['aadhaarDocUrl'] && (
+                    <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center gap-3">
+                      <RefreshCw className="w-4 h-4 text-purple-700 animate-spin shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-purple-900">Uploading Aadhaar to Firebase Storage...</p>
+                        <p className="text-[10px] text-purple-700">Please wait while the file is secured</p>
                       </div>
-                      <a href={formData.aadhaarDocUrl} target="_blank" rel="noreferrer" className="text-[10px] text-purple-700 font-bold hover:underline shrink-0">
-                        View
-                      </a>
                     </div>
                   )}
 
-                  <label className="block w-full">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      disabled={uploadingState['aadhaarDocUrl']}
-                      onChange={(e) => handleFileUpload('aadhaarDocUrl', 'aadhaarDocName', 'Aadhaar Card', e)}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-800 hover:file:bg-purple-200 cursor-pointer"
-                    />
-                  </label>
+                  {uploadErrors['aadhaarDocUrl'] && !uploadingState['aadhaarDocUrl'] && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-[11px] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span className="flex-1">{uploadErrors['aadhaarDocUrl']}</span>
+                    </div>
+                  )}
+
+                  {formData.aadhaarDocUrl && !uploadingState['aadhaarDocUrl'] && (
+                    <div className="space-y-2.5">
+                      <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
+                          {formData.aadhaarDocUrl.startsWith('data:image') || formData.aadhaarDocUrl.includes('firebasestorage') ? (
+                            <img src={formData.aadhaarDocUrl} alt="Aadhaar preview" className="w-12 h-12 object-cover rounded-lg border border-slate-200 shrink-0 shadow-2xs" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 border border-purple-200">
+                              <FileText className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-800 truncate font-mono">
+                              {formData.aadhaarDocName || 'aadhaar_card.pdf'}
+                            </p>
+                            <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Stored in Firebase
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a
+                            href={formData.aadhaarDocUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="View Aadhaar Card in new tab"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View</span>
+                          </a>
+                          <a
+                            href={formData.aadhaarDocUrl}
+                            download={formData.aadhaarDocName || 'aadhaar_card'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="Download Aadhaar Card copy"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Download</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {!isLockedReadOnly && (
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'replace',
+                              fieldUrlKey: 'aadhaarDocUrl',
+                              fieldNameKey: 'aadhaarDocName',
+                              docTitle: 'Aadhaar Card',
+                              acceptTypes: 'image/*,.pdf'
+                            })}
+                            className="flex-1 py-1.5 px-3 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-purple-700" />
+                            <span>Replace / Re-upload</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'remove',
+                              fieldUrlKey: 'aadhaarDocUrl',
+                              fieldNameKey: 'aadhaarDocName',
+                              docTitle: 'Aadhaar Card',
+                              acceptTypes: 'image/*,.pdf'
+                            })}
+                            className="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!formData.aadhaarDocUrl && !uploadingState['aadhaarDocUrl'] && (
+                    isLockedReadOnly ? (
+                      <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-center text-xs text-slate-500 font-medium">
+                        No Aadhaar document uploaded prior to joining lock.
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => aadhaarInputRef.current?.click()}
+                        className="w-full p-4 border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-xl bg-purple-50/40 hover:bg-purple-50/80 transition flex flex-col items-center justify-center gap-1.5 cursor-pointer group text-center"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-110 transition">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-purple-900">
+                          Click to upload Aadhaar Card
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          Images (PNG, JPG) or PDF up to 15MB
+                        </span>
+                      </button>
+                    )
+                  )}
                 </div>
 
                 {/* 2. PAN Card Upload */}
-                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/60 hover:bg-white transition space-y-3">
+                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/70 hover:bg-white transition space-y-3 shadow-2xs">
+                  <input
+                    ref={panInputRef}
+                    type="file"
+                    accept="image/*,.pdf"
+                    disabled={uploadingState['panDocUrl']}
+                    onChange={(e) => handleFileUpload('panDocUrl', 'panDocName', 'PAN Card', e)}
+                    className="hidden"
+                  />
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-purple-700" />
                       <span className="font-bold text-xs text-slate-900">PAN Card Upload *</span>
                     </div>
                     {formData.panDocUrl ? (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Uploaded
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                        <Check className="w-3 h-3 text-emerald-600" /> Uploaded
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
                         Required
                       </span>
                     )}
                   </div>
 
-                  {formData.panDocUrl && (
-                    <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        {formData.panDocUrl.startsWith('data:image') || formData.panDocUrl.includes('firebasestorage') ? (
-                          <img src={formData.panDocUrl} alt="PAN preview" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
-                        ) : (
-                          <FileText className="w-8 h-8 text-purple-600 shrink-0" />
-                        )}
-                        <span className="text-[11px] font-mono text-slate-700 truncate font-semibold">
-                          {formData.panDocName || 'pan_card.pdf'}
-                        </span>
+                  {uploadingState['panDocUrl'] && (
+                    <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center gap-3">
+                      <RefreshCw className="w-4 h-4 text-purple-700 animate-spin shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-purple-900">Uploading PAN Card to Firebase Storage...</p>
+                        <p className="text-[10px] text-purple-700">Please wait while the file is secured</p>
                       </div>
-                      <a href={formData.panDocUrl} target="_blank" rel="noreferrer" className="text-[10px] text-purple-700 font-bold hover:underline shrink-0">
-                        View
-                      </a>
                     </div>
                   )}
 
-                  <label className="block w-full">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      disabled={uploadingState['panDocUrl']}
-                      onChange={(e) => handleFileUpload('panDocUrl', 'panDocName', 'PAN Card', e)}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-800 hover:file:bg-purple-200 cursor-pointer"
-                    />
-                  </label>
+                  {uploadErrors['panDocUrl'] && !uploadingState['panDocUrl'] && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-[11px] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span className="flex-1">{uploadErrors['panDocUrl']}</span>
+                    </div>
+                  )}
+
+                  {formData.panDocUrl && !uploadingState['panDocUrl'] && (
+                    <div className="space-y-2.5">
+                      <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
+                          {formData.panDocUrl.startsWith('data:image') || formData.panDocUrl.includes('firebasestorage') ? (
+                            <img src={formData.panDocUrl} alt="PAN preview" className="w-12 h-12 object-cover rounded-lg border border-slate-200 shrink-0 shadow-2xs" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 border border-purple-200">
+                              <FileText className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-800 truncate font-mono">
+                              {formData.panDocName || 'pan_card.pdf'}
+                            </p>
+                            <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Stored in Firebase
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a
+                            href={formData.panDocUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="View PAN Card in new tab"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View</span>
+                          </a>
+                          <a
+                            href={formData.panDocUrl}
+                            download={formData.panDocName || 'pan_card'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="Download PAN Card copy"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Download</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {!isLockedReadOnly && (
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'replace',
+                              fieldUrlKey: 'panDocUrl',
+                              fieldNameKey: 'panDocName',
+                              docTitle: 'PAN Card',
+                              acceptTypes: 'image/*,.pdf'
+                            })}
+                            className="flex-1 py-1.5 px-3 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-purple-700" />
+                            <span>Replace / Re-upload</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'remove',
+                              fieldUrlKey: 'panDocUrl',
+                              fieldNameKey: 'panDocName',
+                              docTitle: 'PAN Card',
+                              acceptTypes: 'image/*,.pdf'
+                            })}
+                            className="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!formData.panDocUrl && !uploadingState['panDocUrl'] && (
+                    isLockedReadOnly ? (
+                      <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-center text-xs text-slate-500 font-medium">
+                        No PAN Card document uploaded prior to joining lock.
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => panInputRef.current?.click()}
+                        className="w-full p-4 border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-xl bg-purple-50/40 hover:bg-purple-50/80 transition flex flex-col items-center justify-center gap-1.5 cursor-pointer group text-center"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-110 transition">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-purple-900">
+                          Click to upload PAN Card
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          Images (PNG, JPG) or PDF up to 15MB
+                        </span>
+                      </button>
+                    )
+                  )}
                 </div>
 
                 {/* 3. Clear Professional Photo Upload */}
-                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/60 hover:bg-white transition space-y-3">
+                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/70 hover:bg-white transition space-y-3 shadow-2xs">
+                  <input
+                    ref={proPhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingState['professionalPhotoUrl']}
+                    onChange={(e) => handleFileUpload('professionalPhotoUrl', 'professionalPhotoName', 'Professional Photo', e)}
+                    className="hidden"
+                  />
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Image className="w-4 h-4 text-purple-700" />
                       <span className="font-bold text-xs text-slate-900">Clear Professional Photo *</span>
                     </div>
                     {formData.professionalPhotoUrl ? (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Uploaded
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                        <Check className="w-3 h-3 text-emerald-600" /> Uploaded
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
                         Required
                       </span>
                     )}
                   </div>
 
-                  {formData.professionalPhotoUrl && (
-                    <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        <img src={formData.professionalPhotoUrl} alt="Professional Photo" className="w-12 h-12 object-cover rounded-lg border border-slate-200 shadow-2xs shrink-0" />
-                        <span className="text-[11px] font-mono text-slate-700 truncate font-semibold">
-                          {formData.professionalPhotoName || 'headshot.jpg'}
-                        </span>
+                  {uploadingState['professionalPhotoUrl'] && (
+                    <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center gap-3">
+                      <RefreshCw className="w-4 h-4 text-purple-700 animate-spin shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-purple-900">Uploading Photo to Firebase Storage...</p>
+                        <p className="text-[10px] text-purple-700">Please wait while the photo is secured</p>
                       </div>
-                      <a href={formData.professionalPhotoUrl} target="_blank" rel="noreferrer" className="text-[10px] text-purple-700 font-bold hover:underline shrink-0">
-                        View
-                      </a>
                     </div>
                   )}
 
-                  <label className="block w-full">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={uploadingState['professionalPhotoUrl']}
-                      onChange={(e) => handleFileUpload('professionalPhotoUrl', 'professionalPhotoName', 'Professional Photo', e)}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-800 hover:file:bg-purple-200 cursor-pointer"
-                    />
-                  </label>
+                  {uploadErrors['professionalPhotoUrl'] && !uploadingState['professionalPhotoUrl'] && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-[11px] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span className="flex-1">{uploadErrors['professionalPhotoUrl']}</span>
+                    </div>
+                  )}
+
+                  {formData.professionalPhotoUrl && !uploadingState['professionalPhotoUrl'] && (
+                    <div className="space-y-2.5">
+                      <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
+                          <img
+                            src={formData.professionalPhotoUrl}
+                            alt="Professional Photo"
+                            className="w-12 h-12 object-cover rounded-lg border border-slate-200 shrink-0 shadow-2xs"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-800 truncate font-mono">
+                              {formData.professionalPhotoName || 'professional_headshot.jpg'}
+                            </p>
+                            <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Stored in Firebase
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a
+                            href={formData.professionalPhotoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="View Professional Photo in new tab"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View</span>
+                          </a>
+                          <a
+                            href={formData.professionalPhotoUrl}
+                            download={formData.professionalPhotoName || 'professional_photo'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="Download Professional Photo copy"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Download</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {!isLockedReadOnly && (
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'replace',
+                              fieldUrlKey: 'professionalPhotoUrl',
+                              fieldNameKey: 'professionalPhotoName',
+                              docTitle: 'Professional Photo',
+                              acceptTypes: 'image/*'
+                            })}
+                            className="flex-1 py-1.5 px-3 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-purple-700" />
+                            <span>Replace / Re-upload</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'remove',
+                              fieldUrlKey: 'professionalPhotoUrl',
+                              fieldNameKey: 'professionalPhotoName',
+                              docTitle: 'Professional Photo',
+                              acceptTypes: 'image/*'
+                            })}
+                            className="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!formData.professionalPhotoUrl && !uploadingState['professionalPhotoUrl'] && (
+                    isLockedReadOnly ? (
+                      <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-center text-xs text-slate-500 font-medium">
+                        No Professional Photo uploaded prior to joining lock.
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => proPhotoInputRef.current?.click()}
+                        className="w-full p-4 border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-xl bg-purple-50/40 hover:bg-purple-50/80 transition flex flex-col items-center justify-center gap-1.5 cursor-pointer group text-center"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-110 transition">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-purple-900">
+                          Click to upload Professional Photo
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          Clear face portrait (PNG, JPG) up to 15MB
+                        </span>
+                      </button>
+                    )
+                  )}
                 </div>
 
                 {/* 4. Clear Casual Photo Upload */}
-                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/60 hover:bg-white transition space-y-3">
+                <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50/70 hover:bg-white transition space-y-3 shadow-2xs">
+                  <input
+                    ref={casualPhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingState['casualPhotoUrl']}
+                    onChange={(e) => handleFileUpload('casualPhotoUrl', 'casualPhotoName', 'Casual Photo', e)}
+                    className="hidden"
+                  />
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Camera className="w-4 h-4 text-purple-700" />
                       <span className="font-bold text-xs text-slate-900">Clear Casual Photo *</span>
                     </div>
                     {formData.casualPhotoUrl ? (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Uploaded
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                        <Check className="w-3 h-3 text-emerald-600" /> Uploaded
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
                         Required
                       </span>
                     )}
                   </div>
 
-                  {formData.casualPhotoUrl && (
-                    <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        <img src={formData.casualPhotoUrl} alt="Casual Photo" className="w-12 h-12 object-cover rounded-lg border border-slate-200 shadow-2xs shrink-0" />
-                        <span className="text-[11px] font-mono text-slate-700 truncate font-semibold">
-                          {formData.casualPhotoName || 'casual_photo.jpg'}
-                        </span>
+                  {uploadingState['casualPhotoUrl'] && (
+                    <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center gap-3">
+                      <RefreshCw className="w-4 h-4 text-purple-700 animate-spin shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-purple-900">Uploading Photo to Firebase Storage...</p>
+                        <p className="text-[10px] text-purple-700">Please wait while the photo is secured</p>
                       </div>
-                      <a href={formData.casualPhotoUrl} target="_blank" rel="noreferrer" className="text-[10px] text-purple-700 font-bold hover:underline shrink-0">
-                        View
-                      </a>
                     </div>
                   )}
 
-                  {uploadErrors['casualPhotoUrl'] && (
-                    <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-[11px] flex items-center gap-1.5">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{uploadErrors['casualPhotoUrl']}</span>
+                  {uploadErrors['casualPhotoUrl'] && !uploadingState['casualPhotoUrl'] && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-[11px] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span className="flex-1">{uploadErrors['casualPhotoUrl']}</span>
                     </div>
                   )}
 
-                  <label className="block w-full">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={uploadingState['casualPhotoUrl']}
-                      onChange={(e) => handleFileUpload('casualPhotoUrl', 'casualPhotoName', 'Casual Photo', e)}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-800 hover:file:bg-purple-200 cursor-pointer"
-                    />
-                  </label>
+                  {formData.casualPhotoUrl && !uploadingState['casualPhotoUrl'] && (
+                    <div className="space-y-2.5">
+                      <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
+                          <img
+                            src={formData.casualPhotoUrl}
+                            alt="Casual Photo"
+                            className="w-12 h-12 object-cover rounded-lg border border-slate-200 shrink-0 shadow-2xs"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-800 truncate font-mono">
+                              {formData.casualPhotoName || 'casual_photo.jpg'}
+                            </p>
+                            <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Stored in Firebase
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a
+                            href={formData.casualPhotoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="View Casual Photo in new tab"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View</span>
+                          </a>
+                          <a
+                            href={formData.casualPhotoUrl}
+                            download={formData.casualPhotoName || 'casual_photo'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                            title="Download Casual Photo copy"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Download</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {!isLockedReadOnly && (
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'replace',
+                              fieldUrlKey: 'casualPhotoUrl',
+                              fieldNameKey: 'casualPhotoName',
+                              docTitle: 'Casual Photo',
+                              acceptTypes: 'image/*'
+                            })}
+                            className="flex-1 py-1.5 px-3 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-purple-700" />
+                            <span>Replace / Re-upload</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDocActionModal({
+                              type: 'remove',
+                              fieldUrlKey: 'casualPhotoUrl',
+                              fieldNameKey: 'casualPhotoName',
+                              docTitle: 'Casual Photo',
+                              acceptTypes: 'image/*'
+                            })}
+                            className="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!formData.casualPhotoUrl && !uploadingState['casualPhotoUrl'] && (
+                    isLockedReadOnly ? (
+                      <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-center text-xs text-slate-500 font-medium">
+                        No Casual Photo uploaded prior to joining lock.
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => casualPhotoInputRef.current?.click()}
+                        className="w-full p-4 border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-xl bg-purple-50/40 hover:bg-purple-50/80 transition flex flex-col items-center justify-center gap-1.5 cursor-pointer group text-center"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-110 transition">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-purple-900">
+                          Click to upload Casual Photo
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          Personal/casual picture (PNG, JPG) up to 15MB
+                        </span>
+                      </button>
+                    )
+                  )}
                 </div>
 
               </div>
@@ -1548,29 +2062,104 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={() => handleSaveDraft()}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition flex items-center gap-2 cursor-pointer"
-            >
-              <Save className="w-4 h-4 text-purple-700" />
-              <span>Save Progress</span>
-            </button>
+            {isLockedReadOnly ? (
+              <div className="px-4 py-2.5 bg-amber-100 border border-amber-300 text-amber-900 font-bold rounded-xl text-xs flex items-center gap-2 shadow-xs">
+                <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                <span>Form Locked (Read-Only) • Records Verified by HR</span>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSaveDraft()}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition flex items-center gap-2 cursor-pointer"
+                >
+                  <Save className="w-4 h-4 text-purple-700" />
+                  <span>Save Progress</span>
+                </button>
 
-            {currentSection === 9 && (
-              <button
-                type="submit"
-                disabled={!formData.declarationAccepted}
-                className="px-6 py-2.5 bg-gradient-to-r from-purple-800 to-indigo-800 hover:from-purple-900 hover:to-indigo-900 text-white font-extrabold rounded-xl text-xs transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send className="w-4 h-4" />
-                <span>Submit Form</span>
-              </button>
+                {currentSection === 9 && (
+                  <button
+                    type="submit"
+                    disabled={!formData.declarationAccepted}
+                    className="px-6 py-2.5 bg-gradient-to-r from-purple-800 to-indigo-800 hover:from-purple-900 hover:to-indigo-900 text-white font-extrabold rounded-xl text-xs transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Submit Form</span>
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
 
       </form>
+
+      {/* Document Replace / Remove Confirmation Modal */}
+      {docActionModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                docActionModal.type === 'replace' ? 'bg-purple-100 text-purple-700' : 'bg-rose-100 text-rose-700'
+              }`}>
+                {docActionModal.type === 'replace' ? (
+                  <RefreshCw className="w-5 h-5" />
+                ) : (
+                  <Trash2 className="w-5 h-5" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {docActionModal.type === 'replace' ? 'Replace Uploaded Document?' : 'Remove Uploaded Document?'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+                  {docActionModal.type === 'replace' ? (
+                    <>
+                      You are about to replace your current <strong className="text-slate-800 font-bold">{docActionModal.docTitle}</strong>.
+                      Selecting a new file will upload it to Firebase Storage and update your Pre-Onboarding record.
+                    </>
+                  ) : (
+                    <>
+                      Are you sure you want to remove your <strong className="text-slate-800 font-bold">{docActionModal.docTitle}</strong>?
+                      This document requirement will be marked as incomplete until you re-upload.
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDocActionModal(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              {docActionModal.type === 'replace' ? (
+                <button
+                  type="button"
+                  onClick={handleConfirmReplace}
+                  className="px-4 py-2 bg-purple-900 hover:bg-purple-950 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Yes, Choose New File</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConfirmRemove}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Yes, Remove Document</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

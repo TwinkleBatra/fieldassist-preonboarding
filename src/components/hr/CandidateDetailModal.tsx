@@ -11,6 +11,7 @@ import { getCandidateById, saveCandidate } from '../../services/candidateStorage
 import { LIST_OF_OFFICIAL_HRBPS, getHRBPForDepartment } from '../../utils/hrbp';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { CandidateAvatar } from '../CandidateAvatar';
+import { toTitleCase } from '../../utils/textUtils';
 
 interface CandidateDetailModalProps {
   candidate: Candidate | null;
@@ -23,6 +24,7 @@ interface CandidateDetailModalProps {
   onSwitchToCandidateView: (candidateId: string) => void;
   onUpdateSchedule?: (candidateId: string, newSchedule: FirstDayScheduleItem[]) => void;
   onDeleteCandidate?: (candidateId: string) => void;
+  onEditCandidate?: (candidate: Candidate) => void;
 }
 
 export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
@@ -35,7 +37,8 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   onVerifyDoc,
   onSwitchToCandidateView,
   onUpdateSchedule,
-  onDeleteCandidate
+  onDeleteCandidate,
+  onEditCandidate
 }) => {
   const [currentCandidate, setCurrentCandidate] = useState<Candidate | null>(candidate);
   const [notesText, setNotesText] = useState(candidate?.notes || '');
@@ -156,7 +159,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
             <CandidateAvatar candidate={displayCandidate} size="xl" className="border-2 border-purple-300 shadow-md" />
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-xl font-bold text-white">{candidate.name}</h3>
+                <h3 className="text-xl font-bold text-white">{toTitleCase(candidate.name)}</h3>
                 <span className="text-[10px] font-bold bg-purple-500/30 text-purple-200 px-2.5 py-0.5 rounded-full border border-purple-400/30">
                   {candidate.department}
                 </span>
@@ -172,9 +175,21 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
             </div>
           </div>
 
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/10 text-purple-200 hover:text-white transition cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onEditCandidate && (
+              <button
+                onClick={() => onEditCandidate(displayCandidate)}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center gap-1.5 border border-white/20 cursor-pointer shadow-xs"
+                title="Edit Candidate's Core Details"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-amber-300" />
+                <span>Edit Details</span>
+              </button>
+            )}
+            <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/10 text-purple-200 hover:text-white transition cursor-pointer">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
@@ -223,15 +238,29 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
           {/* Joining Details Summary & Location Re-assignment */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-              <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px]">Joining Date & Time</span>
-              <span className="font-bold text-slate-900 text-sm mt-0.5 block">
-                {formatJoiningDate(candidate.joiningDate, { month: 'long', day: 'numeric', year: 'numeric' })}
-              </span>
-              <span className="text-purple-700 font-semibold text-[11px] block">{candidate.reportingTime}</span>
-              {candidate.timeZone && (
-                <span className="text-slate-500 text-[10px] block font-medium">TZ: {candidate.timeZone}</span>
-              )}
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px]">Joining Date & Time</span>
+                  {onEditCandidate && (
+                    <button
+                      onClick={() => onEditCandidate(displayCandidate)}
+                      className="text-[10px] text-purple-700 hover:text-purple-900 font-bold flex items-center gap-0.5 cursor-pointer"
+                      title="Edit Date or Reporting Details"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                </div>
+                <span className="font-bold text-slate-900 text-sm mt-0.5 block">
+                  {formatJoiningDate(candidate.joiningDate, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </span>
+                <span className="text-purple-700 font-semibold text-[11px] block">{candidate.reportingTime}</span>
+                {candidate.timeZone && (
+                  <span className="text-slate-500 text-[10px] block font-medium">TZ: {candidate.timeZone}</span>
+                )}
+              </div>
             </div>
 
             <div className="bg-purple-50/60 p-3.5 rounded-xl border border-purple-200 flex flex-col justify-between">
@@ -318,7 +347,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               <div>
                 <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-purple-700" />
-                  First Day Schedule Customizer ({candidate.name})
+                  First Day Schedule Customizer ({toTitleCase(candidate.name)})
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Customize the Day 1 agenda visible to this joiner on their candidate portal.

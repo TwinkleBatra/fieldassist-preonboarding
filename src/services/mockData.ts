@@ -382,7 +382,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     phone: '+91 97112 88990',
     role: 'Lead Product Designer',
     department: 'Product & Design',
-    joiningDate: '2026-08-25',
+    joiningDate: '2026-09-18',
     workMode: 'Office',
     locationId: 'loc-gurugram',
     reportingTime: '10:30 AM',
@@ -441,7 +441,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
       { id: 'm-3', title: 'Background Verification (BGV)', description: 'Document verification by AuthBridge', status: 'Pending' },
       { id: 'm-4', title: 'IT Asset & Credentials Provisioned', description: 'MacBook Pro allocation', status: 'Pending' },
       { id: 'm-5', title: 'FieldAssist Welcome Swag Box Shipped', description: 'Welcome kit', status: 'Pending' },
-      { id: 'm-6', title: 'Day 1 Orientation', description: 'Reporting at Gurugram HQ', status: 'Pending', date: '2026-08-25' }
+      { id: 'm-6', title: 'Day 1 Orientation', description: 'Reporting at Gurugram HQ', status: 'Pending', date: '2026-09-18' }
     ],
     schedule: DEFAULT_FIELDASSIST_SCHEDULE
   },
@@ -453,7 +453,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     phone: '+91 98220 11223',
     role: 'Enterprise Account Executive',
     department: 'Sales & Growth',
-    joiningDate: '2026-09-01',
+    joiningDate: '2026-09-25',
     workMode: 'Office',
     locationId: 'loc-mumbai',
     reportingTime: '10:30 AM',

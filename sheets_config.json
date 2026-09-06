@@ -1,8 +1,8 @@
 {
   "spreadsheetId": "17UxO1djDD-IvD3JmVzaVoOyyo8TEYcT9cnDii7sjUI0",
   "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/17UxO1djDD-IvD3JmVzaVoOyyo8TEYcT9cnDii7sjUI0/edit",
-  "webhookUrl": "https://script.google.com/macros/s/AKfycbznOAZAiK86H9fg5Ffrg2otlQxMpVjkjFERGNEc5dz6BL32oag5tTcVPrMVDJOtFUo/exec",
+  "webhookUrl": "https://script.google.com/macros/s/AKfycbxSc3zPy8ZG8YITC9rvGtw-Xk_pLhLSJrL_ot8kcSWATiM5V8Qu8jxY-s5Uei_sq5E/exec",
   "syncMode": "webhook",
-  "lastSyncedAt": "2026-08-27T05:35:15.015Z",
+  "lastSyncedAt": "2026-09-02T07:12:33.994Z",
   "autoSyncEnabled": true
 }

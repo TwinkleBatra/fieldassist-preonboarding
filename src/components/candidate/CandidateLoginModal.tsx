@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, UserCheck, Key, ArrowRight, ShieldCheck, Sparkles, CheckCircle, Mail } from 'lucide-react';
 import { Candidate } from '../../types';
 import { CandidateAvatar } from '../CandidateAvatar';
+import { toTitleCase } from '../../utils/textUtils';
 
 interface CandidateLoginModalProps {
   isOpen: boolean;
@@ -124,7 +125,7 @@ export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
                   <div className="flex items-center gap-2.5">
                     <CandidateAvatar candidate={cand} size="sm" />
                     <div>
-                      <p className="text-xs font-bold text-slate-800 group-hover:text-purple-900">{cand.name}</p>
+                      <p className="text-xs font-bold text-slate-800 group-hover:text-purple-900">{toTitleCase(cand.name)}</p>
                       <p className="text-[10px] text-slate-500">{cand.role.split('(')[0]} • {cand.officeCity}</p>
                     </div>
                   </div>

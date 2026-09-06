@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Search, Filter, Plus, Users, Clock, CheckCircle2, UserCheck, AlertCircle, Eye, Mail, FileText, ChevronRight, ShieldCheck, Download, Globe, MapPin, Link2, Copy, Check, X, FileCheck, Table, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, Users, Clock, CheckCircle2, UserCheck, AlertCircle, Eye, Mail, FileText, ChevronRight, ShieldCheck, Download, Globe, MapPin, Link2, Copy, Check, X, FileCheck, Table, FileSpreadsheet, Trash2, Pencil } from 'lucide-react';
 import { Candidate, OnboardingStatus, JoiningLocation, EmailStageKey } from '../../types';
 import { dispatchCandidateEmail } from '../../services/emailDispatcherService';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { GoogleSheetsSyncModal } from './GoogleSheetsSyncModal';
 import { CandidateAvatar } from '../CandidateAvatar';
+import { getCandidateAccessUrl } from '../../utils/appUrl';
+import { toTitleCase } from '../../utils/textUtils';
 
 interface HRDashboardProps {
   candidates: Candidate[];
@@ -16,6 +18,7 @@ interface HRDashboardProps {
   onSendReminder: (candidateName: string, email: string) => void;
   onCandidateUpdated?: () => void;
   onDeleteCandidate?: (candidateId: string) => void;
+  onOpenEditCandidate?: (candidate: Candidate) => void;
 }
 
 export const HRDashboard: React.FC<HRDashboardProps> = ({
@@ -27,12 +30,14 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
   onSwitchToCandidateView,
   onSendReminder,
   onCandidateUpdated,
-  onDeleteCandidate
+  onDeleteCandidate,
+  onOpenEditCandidate
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [departmentFilter, setDepartmentFilter] = useState<string>('All');
   const [locationFilter, setLocationFilter] = useState<string>('All');
+  const [formStatusFilter, setFormStatusFilter] = useState<string>('All');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedCandidateId, setCopiedCandidateId] = useState<string | null>(null);
   const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
@@ -74,9 +79,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
 
   const handleCopyAccessLink = async (candidate: Candidate) => {
     const code = candidate.accessCode || candidate.email;
-    const origin = window.location.origin;
-    const pathname = window.location.pathname;
-    const url = `${origin}${pathname}?accessCode=${encodeURIComponent(code)}`;
+    const url = getCandidateAccessUrl(code);
     
     let success = false;
     try {
@@ -140,9 +143,27 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
     }, 4000);
   };
 
+  // Helper to determine if pre-onboarding form is completed
+  const isCandidateFormComplete = (c: Candidate): boolean => {
+    return Boolean(
+      c.formData?.isSubmitted ||
+      c.formStatus === 'Submitted' ||
+      c.formStatus === 'Verified' ||
+      c.formData?.completionPercentage === 100
+    );
+  };
+
+  const getCandidateFormPercentage = (c: Candidate): number => {
+    if (isCandidateFormComplete(c)) return 100;
+    return typeof c.formData?.completionPercentage === 'number' ? c.formData.completionPercentage : 0;
+  };
+
   // Compute metrics
   const totalCount = candidates.length;
-  const pendingFormCount = candidates.filter(c => c.formStatus !== 'Submitted' && c.formStatus !== 'Verified').length;
+  const completedFormCount = candidates.filter(c => isCandidateFormComplete(c)).length;
+  const inProgressFormCount = candidates.filter(c => !isCandidateFormComplete(c) && getCandidateFormPercentage(c) > 0).length;
+  const notStartedFormCount = candidates.filter(c => !isCandidateFormComplete(c) && getCandidateFormPercentage(c) === 0).length;
+  const pendingFormCount = totalCount - completedFormCount;
   const readyForDay1Count = candidates.filter(c => c.status === 'Ready for Day 1').length;
   const remoteJoinersCount = candidates.filter(c => c.workMode === 'Remote').length;
 
@@ -188,7 +209,16 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
       }
     }
 
-    return matchesSearch && matchesStatus && matchesDept && matchesLocation;
+    let matchesForm = true;
+    if (formStatusFilter === 'Completed') {
+      matchesForm = isCandidateFormComplete(c);
+    } else if (formStatusFilter === 'InProgress') {
+      matchesForm = !isCandidateFormComplete(c) && getCandidateFormPercentage(c) > 0;
+    } else if (formStatusFilter === 'NotStarted') {
+      matchesForm = !isCandidateFormComplete(c) && getCandidateFormPercentage(c) === 0;
+    }
+
+    return matchesSearch && matchesStatus && matchesDept && matchesLocation && matchesForm;
   });
 
   const handleReminderClick = async (c: Candidate) => {
@@ -201,8 +231,8 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
       });
       setToastMessage(res.message);
     } catch (err: any) {
-      onSendReminder(c.name, c.email);
-      setToastMessage(`Email reminder dispatched to ${c.name} (${c.email})`);
+      onSendReminder(toTitleCase(c.name), c.email);
+      setToastMessage(`Email reminder dispatched to ${toTitleCase(c.name)} (${c.email})`);
     }
     if (onCandidateUpdated) {
       onCandidateUpdated();
@@ -213,7 +243,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
   const handleExportCSV = () => {
     const headers = "Name,Role,Department,Joining Date,Reporting Manager,HRBP,Form Status,Completion %,Status\n";
     const rows = candidates.map(c => 
-      `"${c.name}","${c.role}","${c.department}","${c.joiningDate}","${c.reportingManager}","${c.hrbp.name}","${c.formStatus}",${c.formData.completionPercentage}%,"${c.status}"`
+      `"${toTitleCase(c.name)}","${c.role}","${c.department}","${c.joiningDate}","${c.reportingManager}","${c.hrbp.name}","${c.formStatus}",${c.formData.completionPercentage}%,"${c.status}"`
     ).join("\n");
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -303,13 +333,15 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
           <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
             <span className="text-[11px] font-bold text-amber-200 uppercase tracking-wider block">Pending Forms</span>
             <div className="text-2xl sm:text-3xl font-black text-amber-300 mt-1">{pendingFormCount}</div>
-            <span className="text-[10px] text-amber-200/80">Need submission</span>
+            <span className="text-[10px] text-amber-200/80">{completedFormCount} of {totalCount} completed</span>
           </div>
 
           <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
-            <span className="text-[11px] font-bold text-emerald-200 uppercase tracking-wider block">Ready for Day 1</span>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1">{readyForDay1Count}</div>
-            <span className="text-[10px] text-emerald-200/80">All checks verified</span>
+            <span className="text-[11px] font-bold text-emerald-200 uppercase tracking-wider block">Forms Completed</span>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1">{completedFormCount}</div>
+            <span className="text-[10px] text-emerald-200/80">
+              {totalCount > 0 ? Math.round((completedFormCount / totalCount) * 100) : 0}% completion rate
+            </span>
           </div>
 
           <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
@@ -338,6 +370,22 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
         {/* Filters */}
         <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 font-semibold">
+            <FileCheck className="w-3.5 h-3.5 text-purple-700" />
+            <span>Form:</span>
+          </div>
+          <select
+            value={formStatusFilter}
+            onChange={e => setFormStatusFilter(e.target.value)}
+            className="text-xs bg-slate-50 border border-slate-200 font-semibold text-slate-800 rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
+            title="Filter by candidate pre-onboarding form completion"
+          >
+            <option value="All">All Form Statuses ({totalCount})</option>
+            <option value="Completed">✅ Completed ({completedFormCount})</option>
+            <option value="InProgress">⏳ In Progress ({inProgressFormCount})</option>
+            <option value="NotStarted">⚠️ Not Started ({notStartedFormCount})</option>
+          </select>
+
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 font-semibold ml-1">
             <Globe className="w-3.5 h-3.5 text-purple-700" />
             <span>Location:</span>
           </div>
@@ -358,7 +406,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
             </optgroup>
           </select>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 font-semibold ml-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 font-semibold ml-1">
             <Filter className="w-3.5 h-3.5 text-purple-700" />
             <span>Status:</span>
           </div>
@@ -375,7 +423,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
             <option value="Joined">Joined</option>
           </select>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 font-semibold ml-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 font-semibold ml-1">
             <span>Dept:</span>
           </div>
           <select
@@ -416,7 +464,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
                       <div className="flex items-center gap-3">
                         <CandidateAvatar candidate={candidate} size="md" />
                         <div>
-                          <p className="font-bold text-slate-900 group-hover:text-purple-900">{candidate.name}</p>
+                          <p className="font-bold text-slate-900 group-hover:text-purple-900">{toTitleCase(candidate.name)}</p>
                           <p className="text-[11px] text-slate-500">{candidate.email}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[10px] font-mono font-bold bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded border border-purple-200">
@@ -461,58 +509,86 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
                       <p className="font-semibold text-slate-900"><strong className="text-slate-400 font-normal">HRBP:</strong> {candidate.hrbp?.name || 'Unassigned'}</p>
                     </td>
 
-                    {/* Form Status & Completion % & Document Count */}
-                    <td className="py-4 px-4">
-                      <div className="space-y-1 max-w-[140px]">
-                        <div className="flex items-center justify-between text-[11px] font-bold">
-                          <span className={candidate.formData.isSubmitted ? 'text-emerald-700 font-extrabold' : 'text-slate-700'}>
-                            {candidate.formData.isSubmitted ? 'Submitted' : `${candidate.formData.completionPercentage}%`}
-                          </span>
-                          <span className="text-purple-700">{candidate.formData.completionPercentage}%</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${
-                              candidate.formData.isSubmitted ? 'bg-emerald-600' : 'bg-purple-700'
-                            }`}
-                            style={{ width: `${candidate.formData.completionPercentage}%` }}
-                          />
-                        </div>
-                        <div className="flex items-center gap-1 mt-1">
-                          {(() => {
-                            const uploadedDocs = candidate.documents.filter(d => d.status === 'Uploaded' || d.status === 'Verified' || d.fileUrl).length;
-                            const totalDocs = candidate.documents.length || 4;
-                            const totalStagesCount = 4;
-                            const sentEmailsCount = Object.values(candidate.emailAutomation?.stages || {}).filter((s: any) => s?.status === 'Sent').length;
-                            return (
-                              <>
-                                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
-                                  uploadedDocs >= totalDocs
-                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                    : uploadedDocs > 0
-                                    ? 'bg-purple-100 text-purple-800 border-purple-200'
-                                    : 'bg-amber-100 text-amber-800 border-amber-200'
-                                }`}>
-                                  {uploadedDocs}/{totalDocs} Docs
-                                </span>
+                    {/* Pre-Onboarding Form Status, Percentage & Documents */}
+                    <td className="py-4 px-4 min-w-[170px]">
+                      {(() => {
+                        const isComplete = isCandidateFormComplete(candidate);
+                        const pct = getCandidateFormPercentage(candidate);
+                        const isZero = !isComplete && pct === 0;
 
-                                <button
-                                  onClick={() => onSelectCandidateToInspect(candidate)}
-                                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-0.5 cursor-pointer hover:opacity-80 transition ${
-                                    sentEmailsCount === totalStagesCount
-                                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                      : sentEmailsCount > 0
-                                      ? 'bg-purple-100 text-purple-800 border-purple-200'
-                                      : 'bg-amber-50 text-amber-800 border-amber-200'
-                                  }`} title="Click to view & manage pre-onboarding email automation">
-                                  <Mail className="w-2.5 h-2.5" />
-                                  <span>Emails {sentEmailsCount}/{totalStagesCount}</span>
-                                </button>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
+                        return (
+                          <div className="space-y-1.5 max-w-[160px]">
+                            <div className="flex items-center justify-between gap-1">
+                              {isComplete ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  <span>Completed</span>
+                                </span>
+                              ) : isZero ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
+                                  <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                                  <span>Not Started</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs">
+                                  <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                                  <span>In Progress</span>
+                                </span>
+                              )}
+
+                              <span className={`text-[11px] font-black ${
+                                isComplete ? 'text-emerald-700' : isZero ? 'text-rose-600' : 'text-amber-700'
+                              }`}>
+                                {isComplete ? '100%' : `${pct}%`}
+                              </span>
+                            </div>
+
+                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/70">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  isComplete ? 'bg-emerald-600' : isZero ? 'bg-slate-300' : 'bg-amber-500'
+                                }`}
+                                style={{ width: `${isComplete ? 100 : pct}%` }}
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-1 mt-1">
+                              {(() => {
+                                const uploadedDocs = candidate.documents.filter(d => d.status === 'Uploaded' || d.status === 'Verified' || d.fileUrl).length;
+                                const totalDocs = candidate.documents.length || 4;
+                                const totalStagesCount = 4;
+                                const sentEmailsCount = Object.values(candidate.emailAutomation?.stages || {}).filter((s: any) => s?.status === 'Sent').length;
+                                return (
+                                  <>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                                      uploadedDocs >= totalDocs
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                        : uploadedDocs > 0
+                                        ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                                    }`}>
+                                      {uploadedDocs}/{totalDocs} Docs
+                                    </span>
+
+                                    <button
+                                      onClick={() => onSelectCandidateToInspect(candidate)}
+                                      className={`text-[10px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-0.5 cursor-pointer hover:opacity-80 transition ${
+                                        sentEmailsCount === totalStagesCount
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                          : sentEmailsCount > 0
+                                          ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                                      }`} title="Click to view & manage pre-onboarding email automation">
+                                      <Mail className="w-2.5 h-2.5" />
+                                      <span>Emails {sentEmailsCount}/{totalStagesCount}</span>
+                                    </button>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Onboarding Status Badge */}
@@ -562,6 +638,15 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>Inspect</span>
+                        </button>
+
+                        <button
+                          onClick={() => onOpenEditCandidate && onOpenEditCandidate(candidate)}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition border border-amber-200 flex items-center gap-1 cursor-pointer shadow-2xs"
+                          title="Edit Candidate Details (Name, Email, Role, Joining Date, Manager, Location, HRBP)"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Edit</span>
                         </button>
 
                         <button

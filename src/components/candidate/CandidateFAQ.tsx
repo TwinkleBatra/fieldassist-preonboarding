@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
 import { HelpCircle, Search, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
-import { FAQItem } from '../../types';
+import { FAQItem, Candidate } from '../../types';
+import { getPrimaryContactForCandidate } from '../../utils/hrbp';
 
 interface CandidateFAQProps {
   faqs: FAQItem[];
+  candidate?: Candidate;
   onOpenContactHR: () => void;
 }
 
-export const CandidateFAQ: React.FC<CandidateFAQProps> = ({ faqs, onOpenContactHR }) => {
+export const CandidateFAQ: React.FC<CandidateFAQProps> = ({ faqs, candidate, onOpenContactHR }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [openFaqId, setOpenFaqId] = useState<string | null>(faqs[0]?.id || null);
+
+  const primaryContactInfo = getPrimaryContactForCandidate(candidate);
 
   const categories = ['All', 'First Day', 'IT & Laptop', 'Documents & HR', 'Culture & Perks', 'General'];
 
@@ -117,14 +121,14 @@ export const CandidateFAQ: React.FC<CandidateFAQProps> = ({ faqs, onOpenContactH
       <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div>
           <h4 className="text-xs font-bold text-slate-900">Have a specific question not listed here?</h4>
-          <p className="text-[11px] text-slate-500">Reach out directly to your dedicated HR Business Partner.</p>
+          <p className="text-[11px] text-slate-500">{primaryContactInfo.faqNoticeText}</p>
         </div>
         <button
           onClick={onOpenContactHR}
           className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0"
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          <span>Ask HRBP</span>
+          <span>{primaryContactInfo.faqButtonLabel}</span>
         </button>
       </div>
 

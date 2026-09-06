@@ -1,6 +1,8 @@
 import { Candidate, EmailStageKey } from '../types';
 import { getEmailSettings } from './emailSettings';
 import { formatJoiningDate } from '../utils/dateUtils';
+import { toTitleCase } from '../utils/textUtils';
+import { getCandidateAccessUrl } from '../utils/appUrl';
 
 export interface EmailTemplateDefinition {
   key: EmailStageKey;
@@ -15,7 +17,7 @@ export interface EmailTemplateDefinition {
 export function extractFirstName(fullName: string): string {
   if (!fullName) return 'Team Member';
   const clean = fullName.trim().split(' ')[0];
-  return clean || 'Team Member';
+  return toTitleCase(clean) || 'Team Member';
 }
 
 export function calculateTargetDate(joiningDateStr: string, daysBefore: number): string {
@@ -40,6 +42,84 @@ export function calculateTargetDate(joiningDateStr: string, daysBefore: number):
 }
 
 export const EMAIL_TEMPLATES: Record<EmailStageKey, EmailTemplateDefinition> = {
+  account_ready: {
+    key: 'account_ready',
+    daysBeforeJoining: 0,
+    stageName: 'Immediate – Account Ready & Credentials',
+    subject: 'Your FieldAssist Account is Ready',
+    getFirstName: extractFirstName,
+    getBodyText: (firstName: string, candidate?: Candidate) => {
+      const accessCode = candidate?.accessCode || 'Your Access Code';
+      const portalUrl = candidate?.accessCode ? getCandidateAccessUrl(candidate.accessCode) : getCandidateAccessUrl('');
+      return `Hi ${firstName},
+
+Welcome to FieldAssist! We are thrilled to have you join our team.
+
+Your candidate onboarding account is now ready. Please use your credentials below to log into the Candidate Portal and complete your Pre-Onboarding Form as soon as possible:
+
+• Your Access Code: ${accessCode}
+• Candidate Portal Login Link: ${portalUrl}
+
+What to do next:
+1. Click the portal link above to open your Candidate Portal.
+2. Enter your Access Code (${accessCode}) or personal email to log in.
+3. Complete the Pre-Onboarding Form with your personal details, emergency contact, and required document uploads (Aadhaar, PAN, and photos).
+
+Please log in and submit the form as soon as possible. Completing this promptly ensures your background verification, IT asset allocation, and welcome kit are prepared smoothly ahead of your Day 1.
+
+If you have any questions or need support, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
+
+We can’t wait to welcome you aboard!
+
+Thanks & Regards,
+Twinkle Verma | FieldAssist HR`;
+    },
+    getHtmlContent: (firstName: string, candidate?: Candidate) => {
+      const accessCode = candidate?.accessCode || 'Your Access Code';
+      const portalUrl = candidate?.accessCode ? getCandidateAccessUrl(candidate.accessCode) : getCandidateAccessUrl('');
+      return `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+  <div style="background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%); padding: 28px 32px; text-align: left;">
+    <span style="color: #c7d2fe; font-size: 11px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase;">FieldAssist Pre-Onboarding</span>
+    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 22px; font-weight: 800;">Your FieldAssist Account is Ready</h1>
+  </div>
+  <div style="padding: 32px;">
+    <p style="margin-top: 0; font-size: 16px;">Hi <strong>${firstName}</strong>,</p>
+    <p>Welcome to FieldAssist! We are thrilled to have you join our team.</p>
+    <p>Your candidate onboarding account is now ready. Please use your credentials below to log into the Candidate Portal and complete your Pre-Onboarding Form as soon as possible:</p>
+    
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; margin: 24px 0;">
+      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Your Candidate Access Code</div>
+      <div style="font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 26px; font-weight: 800; color: #4338ca; letter-spacing: 2px;">${accessCode}</div>
+      <div style="margin-top: 18px;">
+        <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">Log In to Candidate Portal &rarr;</a>
+      </div>
+      <div style="margin-top: 14px; font-size: 12px; color: #64748b; word-break: break-all;">
+        Direct link: <a href="${portalUrl}" style="color: #4f46e5; text-decoration: underline;">${portalUrl}</a>
+      </div>
+    </div>
+
+    <h3 style="color: #1e1b4b; font-size: 15px; margin-top: 24px; margin-bottom: 10px;">What to do next:</h3>
+    <ol style="padding-left: 20px; margin-bottom: 24px; font-size: 14px; line-height: 1.7;">
+      <li style="margin-bottom: 6px;">Click the login button or direct link above to open your portal.</li>
+      <li style="margin-bottom: 6px;">Enter your Access Code (<strong>${accessCode}</strong>) or registered email.</li>
+      <li style="margin-bottom: 6px;">Complete the Pre-Onboarding Form with your personal, contact, and education details.</li>
+      <li style="margin-bottom: 6px;">Upload your required identity and verification documents (Aadhaar Card, PAN Card, and photos).</li>
+    </ol>
+
+    <div style="font-size: 13px; color: #1e40af; background-color: #eff6ff; padding: 14px 18px; border-left: 4px solid #3b82f6; border-radius: 6px; margin-bottom: 24px;">
+      <strong>Please note:</strong> Please log in and complete the form as soon as possible. Completing this promptly allows us to finalize your IT asset allocation, background verification, and welcome kit ahead of your Day 1.
+    </div>
+
+    <p style="font-size: 14px; color: #334155;">
+      If you have any questions or need support at any stage, feel free to reply directly or contact HR (Twinkle Verma at <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@flick2know.com</a>).
+    </p>
+
+    <p style="margin-top: 28px; margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
+  </div>
+</div>`;
+    }
+  },
   welcome_7d: {
     key: 'welcome_7d',
     daysBeforeJoining: 7,

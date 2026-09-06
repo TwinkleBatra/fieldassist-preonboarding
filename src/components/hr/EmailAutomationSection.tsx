@@ -6,6 +6,7 @@ import { dispatchCandidateEmail, sendTestEmailToCustomRecipient, isCandidateActi
 import { openGmailComposeForCandidate } from '../../services/googleWorkspaceEmail';
 import { EmailSettingsModal } from './EmailSettingsModal';
 import { formatJoiningDate } from '../../utils/dateUtils';
+import { toTitleCase } from '../../utils/textUtils';
 
 interface EmailAutomationSectionProps {
   candidate: Candidate;
@@ -32,7 +33,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
 
   const active = isCandidateActive(candidate);
   const firstName = extractFirstName(candidate.name);
-  const stagesKeys: EmailStageKey[] = ['welcome_7d', 'culture_5d', 'comm_3d', 'day1_1d'];
+  const stagesKeys: EmailStageKey[] = ['account_ready', 'welcome_7d', 'culture_5d', 'comm_3d', 'day1_1d'];
 
   const showToast = (type: 'success' | 'error' | 'info', text: string) => {
     setToastMessage({ type, text });
@@ -102,7 +103,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
         });
         if (res.success) sent++;
       }
-      showToast('success', `Test simulation complete: All 4 pre-onboarding emails processed for ${firstName}`);
+      showToast('success', `Test simulation complete: All 5 pre-onboarding emails processed for ${firstName}`);
       onCandidateUpdated();
     } catch (err: any) {
       showToast('error', err.message || 'Simulation test failed');
@@ -131,10 +132,10 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
         <div>
           <div className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-purple-700" />
-            <h4 className="text-base font-bold text-slate-900">Pre-Onboarding Email Automation (4 Stages)</h4>
+            <h4 className="text-base font-bold text-slate-900">Pre-Onboarding Email Automation (5 Stages)</h4>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Automated 7-day, 5-day, 3-day & 1-day emails calculated from candidate joining date (<strong className="text-purple-900">{formatJoiningDate(candidate.joiningDate, { month: 'long', day: 'numeric', year: 'numeric' })}</strong>)
+            Immediate account credentials email + 7-day, 5-day, 3-day &amp; 1-day emails calculated from candidate joining date (<strong className="text-purple-900">{formatJoiningDate(candidate.joiningDate, { month: 'long', day: 'numeric', year: 'numeric' })}</strong>)
           </p>
         </div>
 
@@ -152,14 +153,14 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
             onClick={handleTestSimulationAll}
             disabled={loadingStage !== null || !active}
             className="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
-            title="Force trigger/test all 4 emails instantly"
+            title="Force trigger/test all 5 emails instantly"
           >
             {loadingStage === 'all' ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <Sparkles className="w-3.5 h-3.5" />
             )}
-            <span>Test All 4 Emails</span>
+            <span>Test All 5 Emails</span>
           </button>
         </div>
       </div>
@@ -176,7 +177,9 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
       <div className="space-y-3">
         {stagesKeys.map(key => {
           const tpl = EMAIL_TEMPLATES[key];
-          const targetDate = calculateTargetDate(candidate.joiningDate, tpl.daysBeforeJoining);
+          const targetDate = key === 'account_ready'
+            ? (candidate.emailAutomation?.stages?.[key]?.targetDate || new Date().toISOString().split('T')[0])
+            : calculateTargetDate(candidate.joiningDate, tpl.daysBeforeJoining);
           const stageLog: EmailStageLog | undefined = candidate.emailAutomation?.stages?.[key];
           const status = stageLog?.status || 'Pending';
           const isExpanded = expandedPreview === key;
@@ -194,7 +197,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-md border border-purple-200">
-                      {tpl.daysBeforeJoining} Day{tpl.daysBeforeJoining > 1 ? 's' : ''} Before
+                      {key === 'account_ready' ? 'Immediate' : `${tpl.daysBeforeJoining} Day${tpl.daysBeforeJoining > 1 ? 's' : ''} Before`}
                     </span>
                     <h5 className="text-xs font-bold text-slate-900">{tpl.stageName}</h5>
 
@@ -208,7 +211,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                     {status === 'Pending' && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300">
                         <Clock className="w-3 h-3 text-amber-600" />
-                        Scheduled for {formatJoiningDate(targetDate, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {key === 'account_ready' ? 'Immediate upon creation' : `Scheduled for ${formatJoiningDate(targetDate, { month: 'short', day: 'numeric', year: 'numeric' })}`}
                       </span>
                     )}
                     {status === 'Failed' && (
@@ -302,8 +305,8 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
               {isExpanded && (
                 <div className="p-4 border-t border-slate-200/80 bg-white rounded-b-xl space-y-3 animate-fadeIn">
                   <div className="flex items-center justify-between text-xs text-slate-500 border-b border-slate-100 pb-2">
-                    <span>To: <strong>{candidate.name}</strong> &lt;{candidate.email}&gt;</span>
-                    <span>Target Date: <strong>{targetDate}</strong></span>
+                    <span>To: <strong>{toTitleCase(candidate.name)}</strong> &lt;{candidate.email}&gt;</span>
+                    <span>Target Date: <strong>{key === 'account_ready' ? 'Immediate' : targetDate}</strong></span>
                   </div>
 
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-slate-800 whitespace-pre-line font-sans leading-relaxed max-h-60 overflow-y-auto">
@@ -336,7 +339,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
           <h5 className="text-xs font-bold text-purple-900 uppercase tracking-wider">Safe HR Test Mode</h5>
         </div>
         <p className="text-[11px] text-slate-600">
-          Send a test email for any stage to an arbitrary address without altering {candidate.name}'s official candidate schedule status.
+          Send a test email for any stage to an arbitrary address without altering {toTitleCase(candidate.name)}'s official candidate schedule status.
         </p>
 
         <form onSubmit={handleSendTestEmail} className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs items-center">

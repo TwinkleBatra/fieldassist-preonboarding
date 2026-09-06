@@ -3,6 +3,8 @@ import { CheckCircle2, Copy, Link2, Key, UserCheck, X, ArrowRight, ShieldCheck, 
 import { Candidate } from '../../types';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { CandidateAvatar } from '../CandidateAvatar';
+import { getCandidateAccessUrl } from '../../utils/appUrl';
+import { toTitleCase, getFirstName } from '../../utils/textUtils';
 
 interface AddedCandidateSuccessModalProps {
   candidate: Candidate | null;
@@ -22,7 +24,7 @@ export const AddedCandidateSuccessModal: React.FC<AddedCandidateSuccessModalProp
   if (!isOpen || !candidate) return null;
 
   const accessCode = candidate.accessCode || candidate.email;
-  const accessUrl = `${window.location.origin}${window.location.pathname}?accessCode=${accessCode}`;
+  const accessUrl = getCandidateAccessUrl(accessCode);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(accessUrl);
@@ -56,7 +58,7 @@ export const AddedCandidateSuccessModal: React.FC<AddedCandidateSuccessModalProp
             <div className="flex items-center gap-3">
               <CandidateAvatar candidate={candidate} size="md" />
               <div>
-                <h4 className="font-extrabold text-slate-900 text-sm">{candidate.name}</h4>
+                <h4 className="font-extrabold text-slate-900 text-sm">{toTitleCase(candidate.name)}</h4>
                 <p className="text-xs text-slate-500 font-medium">{candidate.role}</p>
               </div>
             </div>
@@ -123,6 +125,17 @@ export const AddedCandidateSuccessModal: React.FC<AddedCandidateSuccessModalProp
                 </button>
               </div>
             </div>
+
+            {/* Email Dispatch Notice */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5">
+              <Mail className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <span className="font-bold text-emerald-950 block">Account Credential Email Dispatched</span>
+                <p className="text-emerald-800 text-[11px] mt-0.5 leading-relaxed">
+                  The <span className="font-semibold">"Your FieldAssist Account is Ready"</span> email with Access Code (<span className="font-mono font-bold">{accessCode}</span>) and Candidate Portal login link was sent to <span className="font-semibold">{candidate.email}</span>.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Buttons */}
@@ -135,7 +148,7 @@ export const AddedCandidateSuccessModal: React.FC<AddedCandidateSuccessModalProp
               className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
               <UserCheck className="w-4 h-4" />
-              <span>Log In as {candidate.name.split(' ')[0]} Now</span>
+              <span>Log In as {getFirstName(candidate.name)} Now</span>
             </button>
 
             <button

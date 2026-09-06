@@ -132,7 +132,7 @@ export interface JoiningLocation {
   defaultSchedule?: FirstDayScheduleItem[];
 }
 
-export type EmailStageKey = 'welcome_7d' | 'culture_5d' | 'comm_3d' | 'day1_1d';
+export type EmailStageKey = 'account_ready' | 'welcome_7d' | 'culture_5d' | 'comm_3d' | 'day1_1d';
 
 export type EmailDeliveryStatus = 'Pending' | 'Sent' | 'Failed';
 
@@ -232,6 +232,8 @@ export interface HRQuery {
   id: string;
   candidateId: string;
   candidateName: string;
+  recipientName?: string;
+  recipientEmail?: string;
   subject: string;
   message: string;
   createdAt: string;
