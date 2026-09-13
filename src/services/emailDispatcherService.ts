@@ -70,6 +70,7 @@ export async function dispatchCandidateEmail(
   // Contact Server API Endpoint
   let serverResponse: any = null;
   let usedServerApi = false;
+  let errorMessage: string | undefined = undefined;
 
   try {
     const res = await fetch('/api/emails/send-manual', {
@@ -85,16 +86,26 @@ export async function dispatchCandidateEmail(
       })
     });
 
-    const data = await res.json().catch(() => ({}));
-    serverResponse = data;
-    usedServerApi = true;
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      if (res.status === 404 || text.includes('The page could not be found')) {
+        errorMessage = 'Vercel 404: The email API routes (/api/emails/*) are not deployed on Vercel yet. Please redeploy your latest changes on Vercel.';
+      } else {
+        errorMessage = `Email dispatch failed (HTTP ${res.status}): ${text.slice(0, 120)}`;
+      }
+    } else {
+      const data = await res.json().catch(() => ({}));
+      serverResponse = data;
+      usedServerApi = true;
+    }
   } catch (err: any) {
     console.warn('Server API call for email send failed:', err);
+    errorMessage = err.message || 'Unable to reach email service';
   }
 
   let providerNote = 'None Configured';
   let success = false;
-  let errorMessage: string | undefined = 'Unable to reach backend email server or no email provider configured.';
 
   if (usedServerApi && serverResponse) {
     providerNote = serverResponse.provider || providerNote;

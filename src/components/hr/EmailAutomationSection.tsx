@@ -36,6 +36,15 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
   const fetchProviderStatus = async () => {
     try {
       const res = await fetch('/api/emails/status');
+      if (!res.ok) {
+        console.warn(`Email status check returned status ${res.status}`);
+        return;
+      }
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        console.warn('Email status did not return JSON');
+        return;
+      }
       const data = await res.json();
       if (data?.providerConfig) {
         setProviderStatus({
@@ -82,6 +91,18 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
           recipientName: 'Twinkle Verma'
         })
       });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await res.text().catch(() => '');
+        if (res.status === 404 || text.includes('The page could not be found')) {
+          showToast('error', 'Vercel 404: The /api/emails endpoints have not been redeployed on Vercel yet. Please redeploy your latest changes on Vercel.');
+        } else {
+          showToast('error', `Server error (${res.status}): Please ensure your latest code is deployed.`);
+        }
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         showToast('success', `Real test email (${data.stageKey}) sent successfully to twinkle.verma@flick2know.com! Check your inbox.`);
@@ -210,6 +231,17 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
               }`}>
                 {providerStatus?.hasApiKey ? 'Connected' : 'Credentials Needed'}
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchProviderStatus();
+                  showToast('info', 'Checking email service connection...');
+                }}
+                className="p-1 hover:bg-black/5 rounded text-slate-500 hover:text-slate-700 transition cursor-pointer"
+                title="Refresh email connection status"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
             </div>
             <p className="text-[11px] opacity-90 mt-0.5">
               {providerStatus?.hasApiKey
