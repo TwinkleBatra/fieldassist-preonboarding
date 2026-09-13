@@ -20,7 +20,7 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
   // 1. Resend API
   if (process.env.RESEND_API_KEY) {
     try {
-      const fromEmail = process.env.EMAIL_FROM || 'FieldAssist HR <onboarding@resend.dev>';
+      const fromEmail = process.env.EMAIL_FROM || 'Twinkle Verma - FieldAssist HR <onboarding@resend.dev>';
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -33,6 +33,7 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
           subject,
           text: bodyText,
           html: bodyHtml,
+          reply_to: 'twinkle.verma@flick2know.com',
         }),
       });
 
@@ -61,20 +62,36 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
     try {
       const transporter = createTransporter();
       const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-      const fromEmail = process.env.EMAIL_FROM || `FieldAssist HR <${user}>`;
+      const userDomain = user.includes('@') ? user.split('@')[1] : 'flick2know.com';
+      
+      // Best-practice anti-spam sender formatting
+      const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
+      const fromFormatted = process.env.EMAIL_FROM || `"${senderDisplayName}" <${user}>`;
+      const recipientFormatted = toName ? `"${toName.replace(/"/g, '')}" <${toEmail}>` : toEmail;
+      
+      const customMessageId = `<fa-onboard-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@${userDomain}>`;
 
       const info = await transporter.sendMail({
-        from: fromEmail,
-        to: toName ? `"${toName}" <${toEmail}>` : toEmail,
+        from: fromFormatted,
+        to: recipientFormatted,
+        replyTo: `"${senderDisplayName}" <${user}>`,
         subject,
         text: bodyText,
         html: bodyHtml,
+        messageId: customMessageId,
+        date: new Date(),
+        headers: {
+          'X-Mailer': 'FieldAssist HR Onboarding Portal',
+          'X-Entity-Ref-ID': customMessageId,
+          'Feedback-ID': `FieldAssist:HR-Onboarding:${userDomain}`,
+          'Organization': 'FieldAssist (Flick2Know Technologies Pvt. Ltd.)'
+        }
       });
 
       return {
         success: true,
-        provider: `SMTP (${host}) - Message ID: ${info.messageId}`,
-        messageId: info.messageId,
+        provider: `SMTP (${host}) - Message ID: ${info.messageId || customMessageId}`,
+        messageId: info.messageId || customMessageId,
       };
     } catch (err) {
       console.error('SMTP send error:', err);

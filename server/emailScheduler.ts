@@ -137,22 +137,35 @@ export async function sendEmailViaProvider(options: {
     try {
       const transporter = createSmtpTransporter();
       const hostName = process.env.SMTP_HOST || 'smtp.gmail.com';
-      const fromEmail = process.env.EMAIL_FROM || (process.env.SMTP_USER ? `FieldAssist HR <${process.env.SMTP_USER}>` : undefined);
+      const user = (process.env.SMTP_USER || '').trim();
+      const userDomain = user.includes('@') ? user.split('@')[1] : 'flick2know.com';
+      const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
+      const fromEmail = process.env.EMAIL_FROM || `"${senderDisplayName}" <${user}>`;
+      const customMessageId = `<fa-onboard-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@${userDomain}>`;
 
       const info = await transporter.sendMail({
         from: fromEmail,
-        to: `"${options.toName}" <${options.toEmail}>`,
+        to: `"${options.toName.replace(/"/g, '')}" <${options.toEmail}>`,
+        replyTo: `"${senderDisplayName}" <${user}>`,
         subject: options.subject,
         text: options.bodyText,
-        html: options.bodyHtml
+        html: options.bodyHtml,
+        messageId: customMessageId,
+        date: new Date(),
+        headers: {
+          'X-Mailer': 'FieldAssist HR Onboarding Portal',
+          'X-Entity-Ref-ID': customMessageId,
+          'Feedback-ID': `FieldAssist:HR-Onboarding:${userDomain}`,
+          'Organization': 'FieldAssist (Flick2Know Technologies Pvt. Ltd.)'
+        }
       });
 
       console.log(`[SMTP Dispatch] Successfully sent email to ${options.toEmail} via ${hostName}. MessageId: ${info.messageId}`);
 
       return {
         success: true,
-        provider: `SMTP (${hostName}) - Message ID: ${info.messageId}`,
-        messageId: info.messageId
+        provider: `SMTP (${hostName}) - Message ID: ${info.messageId || customMessageId}`,
+        messageId: info.messageId || customMessageId
       };
     } catch (err: any) {
       console.error('Error sending email via SMTP:', err);

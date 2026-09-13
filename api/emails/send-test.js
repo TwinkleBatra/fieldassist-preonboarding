@@ -1,4 +1,5 @@
 import { sendEmail } from './_emailHelper.js';
+import { getFullEmailContent } from './_templates.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -24,17 +25,25 @@ export default async function handler(req, res) {
     const recipientName = body?.recipientName || 'Twinkle Verma';
     const stageKey = body?.stageKey || 'account_ready';
 
-    const subject = `[FieldAssist Live Test] Your FieldAssist Account is Ready`;
-    const bodyText = `Hi ${recipientName},\n\nThis is a verified test email from FieldAssist HR Onboarding.\n\nYour live email integration is active and working properly.\n\nBest regards,\nTwinkle Verma\nPeople Lead, FieldAssist`;
-    const bodyHtml = `<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-      <h2 style="color: #4338ca;">FieldAssist Live Email Test</h2>
-      <p>Hi <strong>${recipientName}</strong>,</p>
-      <p>This is a verified live test email from your FieldAssist HR Onboarding system.</p>
-      <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-        <p style="margin: 0; font-weight: bold; color: #059669;">✔ Live SMTP delivery working successfully</p>
-      </div>
-      <p>Best regards,<br/><strong>Twinkle Verma</strong><br/>FieldAssist HR</p>
-    </div>`;
+    const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const origin = hostHeader ? `${protocol}://${hostHeader}` : 'https://fieldassist.com';
+
+    const mockCandidate = {
+      id: 'test-preview-candidate',
+      name: recipientName,
+      email: toEmail,
+      accessCode: 'FA-TEST2026',
+      role: 'Enterprise Solutions Consultant',
+      department: 'Sales & Growth',
+      joiningDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      reportingTime: '10:30 AM',
+      officeAddress: 'Plot No. 12, Sector 44, Gurugram, Haryana 122003',
+      officeCity: 'Gurugram',
+      dressCode: 'Smart Casuals'
+    };
+
+    const { subject, bodyText, bodyHtml } = getFullEmailContent(stageKey, mockCandidate, origin);
 
     const dispatchResult = await sendEmail({
       toEmail,
