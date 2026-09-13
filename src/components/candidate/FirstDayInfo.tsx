@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, Shirt, Utensils, Phone, Mail, MessageSquare, CheckSquare, ExternalLink, ShieldCheck, User, Globe, Laptop, Copy, Check, Users } from 'lucide-react';
+import { Calendar, Clock, MapPin, Shirt, Utensils, Phone, Mail, MessageSquare, CheckSquare, ExternalLink, ShieldCheck, User, Globe, Laptop, Copy, Check, Users, CheckCircle2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { toTitleCase } from '../../utils/textUtils';
@@ -146,15 +146,12 @@ export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenCon
             </div>
             <div>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                {isRemote ? 'Day 1 Meal Allowance' : 'Lunch & Refreshments'}
+                {isRemote ? 'Day 1 Meal Allowance' : 'Day 1 Lunch & Meal Allowance'}
               </span>
-              <h3 className="text-sm font-bold text-slate-900 mt-1">{candidate.lunchInfo || (isRemote ? 'Remote meal allowance provided for Day 1' : 'Complimentary lunch at office cafeteria')}</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                {isRemote ? (
-                  <>Day 1 virtual welcome session with your team and team members! Food delivery voucher is on us.</>
-                ) : (
-                  <>Day 1 welcome lunch with your team and team members.</>
-                )}
+              <p className="text-sm font-bold text-slate-900 mt-1 leading-snug">
+                {isRemote 
+                  ? 'Remote food delivery allowance provided for Day 1. Day 1 virtual welcome lunch with your team members.'
+                  : 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.'}
               </p>
             </div>
           </div>
@@ -193,47 +190,58 @@ export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenCon
             </button>
           </div>
 
-          {/* Assigned HRBP (Reference Only - Plain Text Display) */}
-          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 shadow-xs">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-slate-500" />
-                Assigned HRBP
-              </span>
-              <span className="text-[10px] font-semibold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
-                Reference Only
-              </span>
-            </div>
-
-            <div className="space-y-1 text-xs">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-bold text-slate-900">{toTitleCase(assignedHrbp.name)}</span>
-                <span className="text-[11px] text-slate-500 truncate max-w-[140px]">{candidate.department || assignedHrbp.role}</span>
-              </div>
-              
-              <div className="flex items-center justify-between gap-2 pt-1.5 mt-1 border-t border-slate-200/60">
-                <span className="text-[11px] text-slate-600 font-mono truncate select-all" title={assignedHrbp.email}>
-                  {assignedHrbp.email}
+          {/* Assigned HRBP (Prominent High-Contrast Card) */}
+          <div className="bg-white rounded-xl p-4 sm:p-5 border-2 border-purple-200 shadow-xs hover:border-purple-300 transition flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <span className="text-xs font-extrabold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-purple-700" />
+                  Assigned HRBP
                 </span>
-                <button
-                  type="button"
-                  onClick={handleCopyHrbpEmail}
-                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 hover:text-purple-800 bg-white hover:bg-purple-50 border border-purple-200 px-2 py-1 rounded transition cursor-pointer shrink-0"
-                  title="Copy HRBP email address"
-                >
-                  {copiedHrbpEmail ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-600" />
-                      <span className="text-emerald-700 font-bold">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      <span>Copy Email</span>
-                    </>
-                  )}
-                </button>
+                <span className="text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-full">
+                  Reference Contact
+                </span>
               </div>
+
+              <div className="flex items-center gap-3 mb-3">
+                <img
+                  src={assignedHrbp.avatarUrl || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'}
+                  alt={assignedHrbp.name}
+                  className="w-11 h-11 rounded-full object-cover border-2 border-purple-300 shadow-2xs shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base font-black text-slate-900 tracking-tight leading-snug truncate">
+                    {toTitleCase(assignedHrbp.name)}
+                  </h4>
+                  <span className="inline-block text-xs font-semibold text-purple-700 truncate max-w-full">
+                    {candidate.department || assignedHrbp.role}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-purple-100">
+              <span className="text-xs text-slate-700 font-semibold font-mono truncate select-all" title={assignedHrbp.email}>
+                {assignedHrbp.email}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyHrbpEmail}
+                className="inline-flex items-center gap-1 text-xs font-bold text-purple-700 hover:text-white bg-purple-50 hover:bg-purple-700 border border-purple-200 hover:border-purple-700 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs shrink-0"
+                title="Copy HRBP email address"
+              >
+                {copiedHrbpEmail ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-700 font-bold">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Email</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -320,42 +328,50 @@ export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenCon
       })()}
 
       {/* What to Bring on Your First Day */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-md">
-        <div className="flex items-center gap-2">
-          <CheckSquare className="w-5 h-5 text-purple-400" />
-          <h3 className="text-base font-bold text-white">What to Bring on Your First Day</h3>
+      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-purple-50 text-purple-700 border border-purple-100 shrink-0">
+            <CheckSquare className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">What to Bring on Your First Day</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Quick guidelines to prepare for Day 1</p>
+          </div>
         </div>
         
-        <div className="bg-purple-950/60 border border-purple-500/30 rounded-xl p-3.5 mt-3 text-xs text-purple-200 font-medium leading-relaxed">
-          You don't need to bring any physical documents. All required documents and details are collected online during the pre-onboarding process / through Keka.
+        <div className="bg-purple-50/80 border border-purple-200/80 rounded-xl p-3.5 text-xs text-purple-900 font-medium leading-relaxed flex items-start gap-2.5">
+          <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+          <span>
+            <strong>No physical documents required!</strong> All required documents and details are collected online during the pre-onboarding process / through Keka.
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 text-xs flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-purple-600/30 text-purple-300 font-bold flex items-center justify-center shrink-0 text-xs border border-purple-500/30">1</span>
-            <p className="text-slate-200 font-medium leading-relaxed pt-0.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
+          <div className="bg-slate-50 hover:bg-purple-50/40 p-4 rounded-xl border border-slate-200/70 hover:border-purple-200 transition text-xs flex items-start gap-3 group">
+            <span className="w-6 h-6 rounded-lg bg-purple-100 group-hover:bg-purple-700 text-purple-700 group-hover:text-white font-extrabold flex items-center justify-center shrink-0 text-xs border border-purple-200 group-hover:border-purple-700 transition">1</span>
+            <p className="text-slate-700 font-semibold leading-relaxed pt-0.5">
               Just bring yourself and your enthusiasm! 🎉
             </p>
           </div>
 
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 text-xs flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-purple-600/30 text-purple-300 font-bold flex items-center justify-center shrink-0 text-xs border border-purple-500/30">2</span>
-            <p className="text-slate-200 font-medium leading-relaxed pt-0.5">
-              Check your reporting time and joining location before leaving.
+          <div className="bg-slate-50 hover:bg-purple-50/40 p-4 rounded-xl border border-slate-200/70 hover:border-purple-200 transition text-xs flex items-start gap-3 group">
+            <span className="w-6 h-6 rounded-lg bg-purple-100 group-hover:bg-purple-700 text-purple-700 group-hover:text-white font-extrabold flex items-center justify-center shrink-0 text-xs border border-purple-200 group-hover:border-purple-700 transition">2</span>
+            <p className="text-slate-700 font-semibold leading-relaxed pt-0.5">
+              Check your reporting time (11:00 AM) and joining location before leaving.
             </p>
           </div>
 
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 text-xs flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-purple-600/30 text-purple-300 font-bold flex items-center justify-center shrink-0 text-xs border border-purple-500/30">3</span>
-            <p className="text-slate-200 font-medium leading-relaxed pt-0.5">
-              Keep your phone available for any HR communication.
+          <div className="bg-slate-50 hover:bg-purple-50/40 p-4 rounded-xl border border-slate-200/70 hover:border-purple-200 transition text-xs flex items-start gap-3 group">
+            <span className="w-6 h-6 rounded-lg bg-purple-100 group-hover:bg-purple-700 text-purple-700 group-hover:text-white font-extrabold flex items-center justify-center shrink-0 text-xs border border-purple-200 group-hover:border-purple-700 transition">3</span>
+            <p className="text-slate-700 font-semibold leading-relaxed pt-0.5">
+              Keep your phone handy for building visitor security pass check-in and HR communication.
             </p>
           </div>
 
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 text-xs flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-purple-600/30 text-purple-300 font-bold flex items-center justify-center shrink-0 text-xs border border-purple-500/30">4</span>
-            <p className="text-slate-200 font-medium leading-relaxed pt-0.5">
-              Come ready to meet your team and have a great first day.
+          <div className="bg-slate-50 hover:bg-purple-50/40 p-4 rounded-xl border border-slate-200/70 hover:border-purple-200 transition text-xs flex items-start gap-3 group">
+            <span className="w-6 h-6 rounded-lg bg-purple-100 group-hover:bg-purple-700 text-purple-700 group-hover:text-white font-extrabold flex items-center justify-center shrink-0 text-xs border border-purple-200 group-hover:border-purple-700 transition">4</span>
+            <p className="text-slate-700 font-semibold leading-relaxed pt-0.5">
+              Come ready to meet your team, have lunch together, and enjoy a memorable Day 1!
             </p>
           </div>
         </div>

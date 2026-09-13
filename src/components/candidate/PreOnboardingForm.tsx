@@ -39,14 +39,36 @@ interface DocConfirmAction {
   acceptTypes: string;
 }
 
+// Helper to resolve document URL & name from either formData or documents array
+const getCandidateDoc = (cand: Candidate, type: 'aadhaar' | 'pan' | 'pro' | 'casual'): { url: string; name: string } => {
+  if (type === 'aadhaar') {
+    if (cand.formData?.aadhaarDocUrl) return { url: cand.formData.aadhaarDocUrl, name: cand.formData.aadhaarDocName || 'aadhaar_card.pdf' };
+    const doc = cand.documents?.find(d => d.name.toLowerCase().includes('aadhaar') || d.id === 'doc-aadhaar');
+    if (doc?.fileUrl) return { url: doc.fileUrl, name: doc.name || 'aadhaar_card.pdf' };
+  } else if (type === 'pan') {
+    if (cand.formData?.panDocUrl) return { url: cand.formData.panDocUrl, name: cand.formData.panDocName || 'pan_card.pdf' };
+    const doc = cand.documents?.find(d => d.name.toLowerCase().includes('pan') || d.id === 'doc-pan');
+    if (doc?.fileUrl) return { url: doc.fileUrl, name: doc.name || 'pan_card.pdf' };
+  } else if (type === 'pro') {
+    if (cand.formData?.professionalPhotoUrl) return { url: cand.formData.professionalPhotoUrl, name: cand.formData.professionalPhotoName || 'professional_photo.jpg' };
+    const doc = cand.documents?.find(d => d.name.toLowerCase().includes('professional') || d.id === 'doc-photo-pro');
+    if (doc?.fileUrl) return { url: doc.fileUrl, name: doc.name || 'professional_photo.jpg' };
+  } else if (type === 'casual') {
+    if (cand.formData?.casualPhotoUrl) return { url: cand.formData.casualPhotoUrl, name: cand.formData.casualPhotoName || 'casual_photo.jpg' };
+    const doc = cand.documents?.find(d => d.name.toLowerCase().includes('casual') || d.id === 'doc-photo-casual');
+    if (doc?.fileUrl) return { url: doc.fileUrl, name: doc.name || 'casual_photo.jpg' };
+  }
+  return { url: '', name: '' };
+};
+
 export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
   candidate,
   onSaveForm,
   onUploadDoc,
   isReadOnly = false
 }) => {
-  const accessInfo = getCandidateAccessInfo(candidate.joiningDate);
-  const isLockedReadOnly = Boolean(isReadOnly || accessInfo.isGracePeriod || accessInfo.isExpired);
+  // Read-only lock is controlled strictly by isReadOnly prop (set by parent during the 3-day post-joining grace period)
+  const isLockedReadOnly = Boolean(isReadOnly);
 
   const [currentSection, setCurrentSection] = useState<number>(1);
 
@@ -64,6 +86,12 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
       }
     }, 20);
   };
+
+  const initAadhaar = getCandidateDoc(candidate, 'aadhaar');
+  const initPan = getCandidateDoc(candidate, 'pan');
+  const initPro = getCandidateDoc(candidate, 'pro');
+  const initCasual = getCandidateDoc(candidate, 'casual');
+
   const [formData, setFormData] = useState<CandidateFormData>({
     ...candidate.formData,
     email: candidate.formData?.email || candidate.email,
@@ -91,10 +119,23 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
     uanNumber: candidate.formData?.uanNumber || '',
     isJoiningDateComfortable: candidate.formData?.isJoiningDateComfortable || 'Yes',
     declarationAccepted: candidate.formData?.declarationAccepted || false,
+    aadhaarDocUrl: candidate.formData?.aadhaarDocUrl || initAadhaar.url,
+    aadhaarDocName: candidate.formData?.aadhaarDocName || initAadhaar.name,
+    panDocUrl: candidate.formData?.panDocUrl || initPan.url,
+    panDocName: candidate.formData?.panDocName || initPan.name,
+    professionalPhotoUrl: candidate.formData?.professionalPhotoUrl || initPro.url,
+    professionalPhotoName: candidate.formData?.professionalPhotoName || initPro.name,
+    casualPhotoUrl: candidate.formData?.casualPhotoUrl || initCasual.url,
+    casualPhotoName: candidate.formData?.casualPhotoName || initCasual.name,
   });
 
   useEffect(() => {
     if (candidate) {
+      const aInfo = getCandidateDoc(candidate, 'aadhaar');
+      const pInfo = getCandidateDoc(candidate, 'pan');
+      const proInfo = getCandidateDoc(candidate, 'pro');
+      const casInfo = getCandidateDoc(candidate, 'casual');
+
       setFormData(prev => ({
         ...prev,
         ...candidate.formData,
@@ -106,14 +147,14 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
         child2Name: candidate.formData?.child2Name || prev.child2Name,
         child2Dob: candidate.formData?.child2Dob || prev.child2Dob,
         childDetails: candidate.formData?.childDetails || prev.childDetails,
-        aadhaarDocUrl: candidate.formData?.aadhaarDocUrl || prev.aadhaarDocUrl,
-        aadhaarDocName: candidate.formData?.aadhaarDocName || prev.aadhaarDocName,
-        panDocUrl: candidate.formData?.panDocUrl || prev.panDocUrl,
-        panDocName: candidate.formData?.panDocName || prev.panDocName,
-        professionalPhotoUrl: candidate.formData?.professionalPhotoUrl || prev.professionalPhotoUrl,
-        professionalPhotoName: candidate.formData?.professionalPhotoName || prev.professionalPhotoName,
-        casualPhotoUrl: candidate.formData?.casualPhotoUrl || prev.casualPhotoUrl,
-        casualPhotoName: candidate.formData?.casualPhotoName || prev.casualPhotoName,
+        aadhaarDocUrl: candidate.formData?.aadhaarDocUrl || aInfo.url || prev.aadhaarDocUrl,
+        aadhaarDocName: candidate.formData?.aadhaarDocName || aInfo.name || prev.aadhaarDocName,
+        panDocUrl: candidate.formData?.panDocUrl || pInfo.url || prev.panDocUrl,
+        panDocName: candidate.formData?.panDocName || pInfo.name || prev.panDocName,
+        professionalPhotoUrl: candidate.formData?.professionalPhotoUrl || proInfo.url || prev.professionalPhotoUrl,
+        professionalPhotoName: candidate.formData?.professionalPhotoName || proInfo.name || prev.professionalPhotoName,
+        casualPhotoUrl: candidate.formData?.casualPhotoUrl || casInfo.url || prev.casualPhotoUrl,
+        casualPhotoName: candidate.formData?.casualPhotoName || casInfo.name || prev.casualPhotoName,
       }));
     }
   }, [
@@ -122,6 +163,7 @@ export const PreOnboardingForm: React.FC<PreOnboardingFormProps> = ({
     candidate.formData?.panDocUrl,
     candidate.formData?.professionalPhotoUrl,
     candidate.formData?.casualPhotoUrl,
+    candidate.documents
   ]);
 
   const [uploadingState, setUploadingState] = useState<Record<string, boolean>>({});

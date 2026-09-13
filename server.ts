@@ -5,7 +5,7 @@ import { createServer as createViteServer } from "vite";
 import { google } from "googleapis";
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from "./src/services/emailTemplates";
 import { EmailStageKey, EmailStageLog, Candidate } from "./src/types";
-import { sendEmailViaProvider, getServerEmailConfig } from "./server/emailScheduler";
+import { sendEmailViaProvider, getServerEmailConfig, verifySmtpConnection } from "./server/emailScheduler";
 import {
   initializeSpreadsheetTabs,
   syncSingleCandidateToSheets,
@@ -121,6 +121,80 @@ async function startServer() {
         ? `Real email service active via ${config.apiKeyName}`
         : "Email scheduling active in Simulation Mode. Connect RESEND_API_KEY or SMTP credentials in Settings for live inbox delivery."
     });
+  });
+
+  // POST /api/emails/verify-smtp - Verify SMTP connection and credentials
+  app.get("/api/emails/verify-smtp", async (req, res) => {
+    const result = await verifySmtpConnection();
+    res.json(result);
+  });
+
+  // POST /api/emails/send-test - Send a test email directly to any address (e.g. twinkle.verma@flick2know.com)
+  app.post("/api/emails/send-test", async (req, res) => {
+    try {
+      const { toEmail, stageKey, recipientName } = req.body;
+      const targetEmail = toEmail || "twinkle.verma@flick2know.com";
+      const targetStage = (stageKey as EmailStageKey) || "account_ready";
+      const template = EMAIL_TEMPLATES[targetStage] || EMAIL_TEMPLATES.account_ready;
+      const name = recipientName || "Twinkle Verma";
+      const firstName = extractFirstName(name);
+
+      const sampleCandidate: Candidate = {
+        id: "test-candidate",
+        name: name,
+        email: targetEmail,
+        phone: "+91 98765 43210",
+        role: "People & Culture Lead",
+        department: "People & Culture",
+        joiningDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        reportingTime: "11:00 AM",
+        officeAddress: "Plot No. 12, Sector 44, Gurugram, Haryana",
+        officeCity: "Gurgaon",
+        officeCountry: "India",
+        workMode: "Office",
+        accessCode: "FA-WELCOME-2026",
+        dressCode: "Smart Casuals",
+        lunchInfo: "In-house cafeteria on the 1st floor with complimentary hot buffet lunch.",
+        status: "Ready for Day 1",
+        formStatus: "Verified",
+        reportingManager: "Divir Tiwari",
+        reportingManagerRole: "Director",
+        hrbp: {
+          name: "Twinkle Verma",
+          email: "twinkle.verma@flick2know.com",
+          role: "People & Culture Lead",
+          phone: "+91 98765 43210"
+        },
+        formData: {} as any,
+        documents: [],
+        milestones: [],
+        schedule: []
+      };
+
+      const emailText = template.getBodyText(firstName, sampleCandidate);
+      const emailHtml = template.getHtmlContent(firstName, sampleCandidate);
+
+      const dispatchResult = await sendEmailViaProvider({
+        toEmail: targetEmail,
+        toName: name,
+        subject: `[FieldAssist Live Test] ${template.subject}`,
+        bodyText: emailText,
+        bodyHtml: emailHtml
+      });
+
+      res.json({
+        success: dispatchResult.success,
+        provider: dispatchResult.provider,
+        messageId: dispatchResult.messageId,
+        errorMessage: dispatchResult.errorMessage,
+        targetEmail,
+        stageKey: targetStage,
+        subject: template.subject
+      });
+    } catch (err: any) {
+      console.error("Error in /api/emails/send-test:", err);
+      res.status(500).json({ success: false, errorMessage: err.message || "Test email dispatch failed" });
+    }
   });
 
   // POST /api/emails/sync-candidates - Sync client candidates store to server memory

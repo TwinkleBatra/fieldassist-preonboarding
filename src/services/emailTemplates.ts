@@ -140,12 +140,12 @@ For now, here’s what you can expect:
 
 • Access to our AMMO pre-read, to help you get familiar with FieldAssist. (${settings.ammoPrereadUrl})
 
-In case you have any questions or need support at any stage, feel free to reach out to your recruiter—your go-to person until your onboarding begins.
+In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
 
 Cheers!
 
 Thanks & Regards,
-FA HR`;
+Twinkle Verma | FieldAssist HR`;
     },
     getHtmlContent: (firstName: string) => {
       const settings = getEmailSettings();
@@ -163,9 +163,9 @@ FA HR`;
     <ul style="padding-left: 20px; margin-bottom: 24px;">
       <li style="margin-bottom: 8px;">Access to our <a href="${settings.ammoPrereadUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">AMMO pre-read</a>, to help you get familiar with FieldAssist.</li>
     </ul>
-    <p>In case you have any questions or need support at any stage, feel free to reach out to your recruiter—your go-to person until your onboarding begins.</p>
+    <p>In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@flick2know.com</a>).</p>
     <p style="margin-top: 24px;">Cheers!</p>
-    <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>FA HR</strong></p>
+    <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
   </div>
 </div>`;
     }

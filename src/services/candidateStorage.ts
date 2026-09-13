@@ -109,38 +109,23 @@ export const ensureLatestSchedule = (candidate: Candidate): { candidate: Candida
     };
   }
 
-  let updated = false;
-  const newSchedule = candidate.schedule.map(item => {
-    // Migrate old combined title 'Office Tour & Manager Meet' to standalone 'Office Tour'
-    if (item.title === 'Office Tour & Manager Meet') {
-      updated = true;
-      return {
-        ...item,
-        title: 'Office Tour',
-        description: 'Guided tour of the office and facilities.'
-      };
-    }
-    return item;
-  });
-
-  // Check for obsolete legacy titles from older mock data
-  const hasObsoleteLegacyTitles = newSchedule.some(item => 
+  // If schedule starts with old 10:30 AM time or has outdated titles, upgrade to the 11:00 AM - 4:00 PM schedule
+  const startsAt1030 = candidate.schedule[0]?.time === '10:30 AM';
+  const hasObsoleteLegacyTitles = candidate.schedule.some(item => 
     item.title.includes('Welcome & Campus Reception') ||
     item.title.includes('HR Induction & Culture Overview') ||
     item.title.includes('IT Asset & Hardware Setup') ||
-    item.title.includes('Team Lunch & Coffee')
+    item.title.includes('Team Lunch & Coffee') ||
+    item.title === 'Office Tour & Manager Meet'
   );
 
-  if (hasObsoleteLegacyTitles) {
+  if (startsAt1030 || hasObsoleteLegacyTitles) {
     return {
-      candidate: { ...candidate, schedule: DEFAULT_FIELDASSIST_SCHEDULE },
-      updated: true
-    };
-  }
-
-  if (updated) {
-    return {
-      candidate: { ...candidate, schedule: newSchedule },
+      candidate: {
+        ...candidate,
+        reportingTime: candidate.reportingTime === '10:30 AM' ? '11:00 AM' : candidate.reportingTime,
+        schedule: DEFAULT_FIELDASSIST_SCHEDULE
+      },
       updated: true
     };
   }
@@ -149,13 +134,78 @@ export const ensureLatestSchedule = (candidate: Candidate): { candidate: Candida
 };
 
 export const ensureUpcomingJoiningDate = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
-  if (candidate.id === 'cand-4' && candidate.joiningDate === '2026-08-25') {
-    return { candidate: { ...candidate, joiningDate: '2026-09-18' }, updated: true };
+  let updated = false;
+  let newCand = { ...candidate };
+
+  if (newCand.id === 'cand-1' && (newCand.joiningDate === '2026-08-18' || newCand.joiningDate.startsWith('2026-08-'))) {
+    newCand.joiningDate = '2026-09-24';
+    updated = true;
   }
-  if (candidate.id === 'cand-5' && candidate.joiningDate === '2026-09-01') {
-    return { candidate: { ...candidate, joiningDate: '2026-09-25' }, updated: true };
+  if (newCand.id === 'cand-2' && (newCand.joiningDate === '2026-08-20' || newCand.joiningDate.startsWith('2026-08-'))) {
+    newCand.joiningDate = '2026-09-28';
+    updated = true;
   }
-  return { candidate, updated: false };
+  if (newCand.id === 'cand-3' && (newCand.joiningDate === '2026-08-28' || newCand.joiningDate.startsWith('2026-08-'))) {
+    newCand.joiningDate = '2026-09-12';
+    updated = true;
+  }
+  if (newCand.id === 'cand-4' && newCand.joiningDate === '2026-08-25') {
+    newCand.joiningDate = '2026-09-18';
+    updated = true;
+  }
+  if (newCand.id === 'cand-5' && newCand.joiningDate === '2026-09-01') {
+    newCand.joiningDate = '2026-09-25';
+    updated = true;
+  }
+
+  if (newCand.reportingTime === '10:30 AM') {
+    newCand.reportingTime = '11:00 AM';
+    updated = true;
+  }
+
+  if (newCand.lunchInfo && (newCand.lunchInfo.includes('espresso') || newCand.lunchInfo.includes('coffee'))) {
+    newCand.lunchInfo = 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.';
+    updated = true;
+  }
+
+  // Ensure documents with fileUrl are also synced into formData doc URLs so Replace/Remove buttons are instantly ready
+  if (newCand.documents && newCand.documents.length > 0) {
+    const aadhaarDoc = newCand.documents.find(d => d.name.toLowerCase().includes('aadhaar') || d.id === 'doc-aadhaar');
+    const panDoc = newCand.documents.find(d => d.name.toLowerCase().includes('pan') || d.id === 'doc-pan');
+    const proPhoto = newCand.documents.find(d => d.name.toLowerCase().includes('professional') || d.id === 'doc-photo-pro');
+    const casualPhoto = newCand.documents.find(d => d.name.toLowerCase().includes('casual') || d.id === 'doc-photo-casual');
+
+    let formDataChanged = false;
+    const newFormData = { ...newCand.formData };
+
+    if (aadhaarDoc?.fileUrl && !newFormData.aadhaarDocUrl) {
+      newFormData.aadhaarDocUrl = aadhaarDoc.fileUrl;
+      newFormData.aadhaarDocName = newFormData.aadhaarDocName || aadhaarDoc.name || 'aadhaar_card.pdf';
+      formDataChanged = true;
+    }
+    if (panDoc?.fileUrl && !newFormData.panDocUrl) {
+      newFormData.panDocUrl = panDoc.fileUrl;
+      newFormData.panDocName = newFormData.panDocName || panDoc.name || 'pan_card.pdf';
+      formDataChanged = true;
+    }
+    if (proPhoto?.fileUrl && !newFormData.professionalPhotoUrl) {
+      newFormData.professionalPhotoUrl = proPhoto.fileUrl;
+      newFormData.professionalPhotoName = newFormData.professionalPhotoName || proPhoto.name || 'professional_photo.jpg';
+      formDataChanged = true;
+    }
+    if (casualPhoto?.fileUrl && !newFormData.casualPhotoUrl) {
+      newFormData.casualPhotoUrl = casualPhoto.fileUrl;
+      newFormData.casualPhotoName = newFormData.casualPhotoName || casualPhoto.name || 'casual_photo.jpg';
+      formDataChanged = true;
+    }
+
+    if (formDataChanged) {
+      newCand.formData = newFormData;
+      updated = true;
+    }
+  }
+
+  return { candidate: newCand, updated };
 };
 
 // Initialize localStorage if empty
@@ -193,15 +243,20 @@ export const getLocations = (): JoiningLocation[] => {
     const valid3Cities = ['gurugram', 'gurgaon', 'bengaluru', 'bangalore', 'mumbai'];
     const filtered = parsed.filter(l => valid3Cities.includes(l.city.toLowerCase()));
     
-    // Refresh if stored data contains outdated addresses or non-10:30 AM reporting time
+    const hasGurgaon = filtered.some(l => l.city.toLowerCase().includes('gurg') || l.name.toLowerCase().includes('gurg'));
+    const hasBangalore = filtered.some(l => l.city.toLowerCase().includes('beng') || l.city.toLowerCase().includes('bang') || l.name.toLowerCase().includes('bang') || l.name.toLowerCase().includes('beng'));
+    const hasMumbai = filtered.some(l => l.city.toLowerCase().includes('mumbai') || l.name.toLowerCase().includes('mumbai'));
+
+    // Refresh if stored data contains outdated addresses, old 10:30 AM reporting time, or coffee references
     const hasOutdatedData = filtered.some(l => 
       l.officeAddress.includes('Unitech Cyber Park') || 
       l.officeAddress.includes('BKC Tech Park') || 
       l.officeAddress.includes('100 Feet Road') ||
-      l.reportingTime !== '10:30 AM'
+      l.reportingTime === '10:30 AM' ||
+      (l.lunchInfo && (l.lunchInfo.includes('espresso') || l.lunchInfo.includes('coffee')))
     );
 
-    if (hasOutdatedData || filtered.length < 3) {
+    if (hasOutdatedData || !hasGurgaon || !hasBangalore || !hasMumbai || filtered.length < 3) {
       localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(INITIAL_LOCATIONS));
       return INITIAL_LOCATIONS;
     }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Filter, Plus, Users, Clock, CheckCircle2, UserCheck, AlertCircle, Eye, Mail, FileText, ChevronRight, ShieldCheck, Download, Globe, MapPin, Link2, Copy, Check, X, FileCheck, Table, FileSpreadsheet, Trash2, Pencil } from 'lucide-react';
 import { Candidate, OnboardingStatus, JoiningLocation, EmailStageKey } from '../../types';
 import { dispatchCandidateEmail } from '../../services/emailDispatcherService';
@@ -7,6 +7,7 @@ import { GoogleSheetsSyncModal } from './GoogleSheetsSyncModal';
 import { CandidateAvatar } from '../CandidateAvatar';
 import { getCandidateAccessUrl } from '../../utils/appUrl';
 import { toTitleCase } from '../../utils/textUtils';
+import { INITIAL_LOCATIONS } from '../../services/mockData';
 
 interface HRDashboardProps {
   candidates: Candidate[];
@@ -169,10 +170,24 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
 
   const departments = ['All', ...Array.from(new Set(candidates.map(c => c.department)))];
 
-  const registeredOffices = locations.filter(loc => {
-    const city = loc.city.toLowerCase();
-    return city.includes('gurg') || city.includes('beng') || city.includes('bang') || city.includes('mumbai');
-  });
+  const registeredOffices = useMemo(() => {
+    const list = locations.filter(loc => {
+      const city = (loc.city || '').toLowerCase();
+      const name = (loc.name || '').toLowerCase();
+      return (
+        city.includes('gurg') || name.includes('gurg') ||
+        city.includes('beng') || city.includes('bang') || name.includes('bang') || name.includes('beng') ||
+        city.includes('mumbai') || name.includes('mumbai')
+      );
+    });
+
+    const hasGurgaon = list.some(l => (l.city || '').toLowerCase().includes('gurg') || (l.name || '').toLowerCase().includes('gurg'));
+    if (!hasGurgaon) {
+      const fallbackGurgaon = INITIAL_LOCATIONS.find(l => (l.city || '').toLowerCase().includes('gurg') || (l.name || '').toLowerCase().includes('gurg'));
+      if (fallbackGurgaon) list.unshift(fallbackGurgaon);
+    }
+    return list;
+  }, [locations]);
 
   const filteredCandidates = candidates.filter(c => {
     const matchesSearch =
@@ -192,14 +207,15 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
     } else if (locationFilter === 'Office') {
       matchesLocation = c.workMode === 'Office' || !c.workMode;
     } else if (locationFilter !== 'All') {
-      const targetLoc = locations.find(l => l.id === locationFilter);
+      const targetLoc = locations.find(l => l.id === locationFilter) || INITIAL_LOCATIONS.find(l => l.id === locationFilter);
       if (targetLoc) {
-        const locCity = targetLoc.city.toLowerCase();
-        const candCity = c.officeCity.toLowerCase();
+        const locCity = (targetLoc.city || '').toLowerCase();
+        const candCity = (c.officeCity || '').toLowerCase();
         matchesLocation = (c.workMode === 'Office' || !c.workMode) && (
           c.locationId === locationFilter ||
           candCity === locCity ||
-          (locCity.includes('gurg') && candCity.includes('gurg')) ||
+          (locCity.includes('gurg') && (candCity.includes('gurg') || candCity.includes('delhi'))) ||
+          (targetLoc.name.toLowerCase().includes('gurgaon') && (candCity.includes('gurg') || candCity.includes('delhi'))) ||
           (locCity.includes('bang') && (candCity.includes('beng') || candCity.includes('bang'))) ||
           (locCity.includes('beng') && (candCity.includes('beng') || candCity.includes('bang'))) ||
           (locCity.includes('mumbai') && candCity.includes('mumbai'))

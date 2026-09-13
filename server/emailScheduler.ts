@@ -16,15 +16,60 @@ export function getServerEmailConfig(): ServerEmailProviderConfig {
       fromEmail: process.env.EMAIL_FROM || 'FieldAssist HR <onboarding@resend.dev>'
     };
   }
-  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+  if ((process.env.SMTP_HOST && process.env.SMTP_USER) || (process.env.SMTP_USER && process.env.SMTP_PASS)) {
+    const defaultHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     return {
       provider: 'smtp',
       hasApiKey: true,
-      apiKeyName: 'SMTP_HOST',
-      fromEmail: process.env.EMAIL_FROM || process.env.SMTP_USER
+      apiKeyName: process.env.SMTP_HOST ? 'SMTP_HOST & SMTP_USER' : 'SMTP_USER & SMTP_PASS (Gmail/Workspace)',
+      fromEmail: process.env.EMAIL_FROM || `FieldAssist HR <${process.env.SMTP_USER}>`
     };
   }
   return { provider: 'none', hasApiKey: false };
+}
+
+/**
+ * Creates a configured nodemailer transport with support for Gmail / Google Workspace and custom SMTP
+ */
+function createSmtpTransporter() {
+  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+  const port = Number(process.env.SMTP_PORT) || (host.includes('gmail') ? 465 : 587);
+  const secure = port === 465;
+  const user = (process.env.SMTP_USER || '').trim();
+  // Google App Passwords are shown in 4 groups of 4 letters like "abcd efgh ijkl mnop"; remove any spaces:
+  const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+}
+
+/**
+ * Checks if the SMTP connection credentials work
+ */
+export async function verifySmtpConnection(): Promise<{ success: boolean; message: string }> {
+  const config = getServerEmailConfig();
+  if (config.provider !== 'smtp') {
+    return { success: false, message: 'SMTP provider is not configured.' };
+  }
+
+  try {
+    const transporter = createSmtpTransporter();
+    await transporter.verify();
+    return { success: true, message: `SMTP connection to ${process.env.SMTP_HOST || 'smtp.gmail.com'} verified successfully.` };
+  } catch (err: any) {
+    console.error('SMTP verification error:', err);
+    return {
+      success: false,
+      message: err.message || 'Failed to verify SMTP credentials. Please check your App Password or credentials.'
+    };
+  }
 }
 
 /**
@@ -87,20 +132,13 @@ export async function sendEmailViaProvider(options: {
     }
   }
 
-  // 2. SMTP Flow
-  if (config.provider === 'smtp' && process.env.SMTP_HOST && process.env.SMTP_USER) {
+  // 2. SMTP Flow (Gmail, Google Workspace, or custom SMTP)
+  if (config.provider === 'smtp') {
     try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: Number(process.env.SMTP_PORT) === 465,
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
-      });
+      const transporter = createSmtpTransporter();
+      const hostName = process.env.SMTP_HOST || 'smtp.gmail.com';
+      const fromEmail = process.env.EMAIL_FROM || (process.env.SMTP_USER ? `FieldAssist HR <${process.env.SMTP_USER}>` : undefined);
 
-      const fromEmail = process.env.EMAIL_FROM || process.env.SMTP_USER;
       const info = await transporter.sendMail({
         from: fromEmail,
         to: `"${options.toName}" <${options.toEmail}>`,
@@ -109,17 +147,23 @@ export async function sendEmailViaProvider(options: {
         html: options.bodyHtml
       });
 
+      console.log(`[SMTP Dispatch] Successfully sent email to ${options.toEmail} via ${hostName}. MessageId: ${info.messageId}`);
+
       return {
         success: true,
-        provider: `SMTP (${process.env.SMTP_HOST}) - Message ID: ${info.messageId}`,
+        provider: `SMTP (${hostName}) - Message ID: ${info.messageId}`,
         messageId: info.messageId
       };
     } catch (err: any) {
       console.error('Error sending email via SMTP:', err);
+      let friendlyError = err.message || 'SMTP dispatch failed';
+      if (err.code === 'EAUTH' || (err.response && err.response.includes('Username and Password not accepted'))) {
+        friendlyError = 'Google SMTP Authentication failed: Please verify your Google email and 16-character App Password (ensure 2-Step Verification is enabled in Google Account).';
+      }
       return {
         success: false,
-        provider: 'SMTP',
-        errorMessage: err.message || 'SMTP dispatch failed'
+        provider: `SMTP (${process.env.SMTP_HOST || 'smtp.gmail.com'})`,
+        errorMessage: friendlyError
       };
     }
   }
@@ -129,6 +173,6 @@ export async function sendEmailViaProvider(options: {
   return {
     success: false,
     provider: 'None Configured',
-    errorMessage: 'No email provider API key configured. Please set RESEND_API_KEY or SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) in environment variables.'
+    errorMessage: 'No email provider credentials configured. Please configure SMTP_USER and SMTP_PASS (Gmail/Google Workspace App Password) or RESEND_API_KEY in Settings.'
   };
 }

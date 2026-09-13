@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Clock, CheckCircle2, AlertCircle, Play, Eye, RefreshCw, Send, Sparkles, ChevronDown, ChevronUp, Link2, FlaskConical, ExternalLink } from 'lucide-react';
+import { Mail, Clock, CheckCircle2, AlertCircle, Play, Eye, RefreshCw, Send, Sparkles, ChevronDown, ChevronUp, Link2, FlaskConical, ExternalLink, ShieldCheck, Check, HelpCircle } from 'lucide-react';
 import { Candidate, EmailStageKey, EmailStageLog } from '../../types';
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from '../../services/emailTemplates';
 import { dispatchCandidateEmail, sendTestEmailToCustomRecipient, isCandidateActive } from '../../services/emailDispatcherService';
@@ -19,11 +19,41 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
   const [confirmResendStage, setConfirmResendStage] = useState<EmailStageKey | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [testSendingTwinkle, setTestSendingTwinkle] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<{
+    hasApiKey: boolean;
+    provider: string;
+    apiKeyName?: string;
+    fromEmail?: string;
+    note?: string;
+  } | null>(null);
 
   // Test Mode State
-  const [testStage, setTestStage] = useState<EmailStageKey>('welcome_7d');
-  const [testEmail, setTestEmail] = useState(candidate.email || 'hr.test@flick2know.com');
+  const [testStage, setTestStage] = useState<EmailStageKey>('account_ready');
+  const [testEmail, setTestEmail] = useState(candidate.email || 'twinkle.verma@flick2know.com');
   const [testLoading, setTestLoading] = useState(false);
+
+  const fetchProviderStatus = async () => {
+    try {
+      const res = await fetch('/api/emails/status');
+      const data = await res.json();
+      if (data?.providerConfig) {
+        setProviderStatus({
+          hasApiKey: data.providerConfig.hasApiKey,
+          provider: data.providerConfig.provider,
+          apiKeyName: data.providerConfig.apiKeyName,
+          fromEmail: data.providerConfig.fromEmail,
+          note: data.note
+        });
+      }
+    } catch (e) {
+      console.warn('Could not fetch email status', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchProviderStatus();
+  }, []);
 
   useEffect(() => {
     if (candidate?.email) {
@@ -37,7 +67,33 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
 
   const showToast = (type: 'success' | 'error' | 'info', text: string) => {
     setToastMessage({ type, text });
-    setTimeout(() => setToastMessage(null), 4000);
+    setTimeout(() => setToastMessage(null), 5000);
+  };
+
+  const handleSendTestToTwinkle = async (stageKey: EmailStageKey = 'account_ready') => {
+    setTestSendingTwinkle(true);
+    try {
+      const res = await fetch('/api/emails/send-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toEmail: 'twinkle.verma@flick2know.com',
+          stageKey,
+          recipientName: 'Twinkle Verma'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('success', `Real test email (${data.stageKey}) sent successfully to twinkle.verma@flick2know.com! Check your inbox.`);
+      } else {
+        showToast('error', `Test email delivery failed: ${data.errorMessage || 'Unknown error'}`);
+      }
+      fetchProviderStatus();
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to dispatch test email');
+    } finally {
+      setTestSendingTwinkle(false);
+    }
   };
 
   const handleOpenInGmail = (stageKey: EmailStageKey) => {
@@ -126,6 +182,59 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
           <button onClick={() => setToastMessage(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer ml-2">✕</button>
         </div>
       )}
+
+      {/* Real SMTP Delivery Status Banner */}
+      <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+        providerStatus?.hasApiKey
+          ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+          : 'bg-amber-50/80 border-amber-300 text-amber-950'
+      }`}>
+        <div className="flex items-start gap-2.5 min-w-0">
+          <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+            providerStatus?.hasApiKey ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+          }`}>
+            {providerStatus?.hasApiKey ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold">
+                {providerStatus?.hasApiKey
+                  ? 'Live Email Service Active'
+                  : 'Live SMTP Email Delivery Ready for Setup'}
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                providerStatus?.hasApiKey
+                  ? 'bg-emerald-200/80 border-emerald-400 text-emerald-800'
+                  : 'bg-amber-200/80 border-amber-400 text-amber-800'
+              }`}>
+                {providerStatus?.hasApiKey ? 'Connected' : 'Credentials Needed'}
+              </span>
+            </div>
+            <p className="text-[11px] opacity-90 mt-0.5">
+              {providerStatus?.hasApiKey
+                ? `Sending real emails via ${providerStatus.provider}. Sender: ${providerStatus.fromEmail}`
+                : 'Provide your Gmail / Google Workspace email + 16-character App Password (SMTP_USER & SMTP_PASS) in Settings to deliver directly to candidate inboxes.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Live Test Button */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => handleSendTestToTwinkle('account_ready')}
+            disabled={testSendingTwinkle}
+            className="px-3 py-1.5 bg-purple-900 hover:bg-black text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+            title="Send an actual test email to twinkle.verma@flick2know.com"
+          >
+            {testSendingTwinkle ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+            <span>Send Test to Twinkle</span>
+          </button>
+        </div>
+      </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
