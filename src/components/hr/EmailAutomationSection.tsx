@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Clock, CheckCircle2, AlertCircle, Play, Eye, RefreshCw, Send, Sparkles, ChevronDown, ChevronUp, Link2, FlaskConical, ExternalLink, ShieldCheck, Check, HelpCircle } from 'lucide-react';
+import { Mail, Clock, CheckCircle2, AlertCircle, Play, Eye, RefreshCw, Send, Sparkles, ChevronDown, ChevronUp, Link2, FlaskConical, ExternalLink, ShieldCheck, Check, HelpCircle, Copy, X, Key, Settings } from 'lucide-react';
 import { Candidate, EmailStageKey, EmailStageLog } from '../../types';
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from '../../services/emailTemplates';
 import { dispatchCandidateEmail, sendTestEmailToCustomRecipient, isCandidateActive } from '../../services/emailDispatcherService';
-import { openGmailComposeForCandidate } from '../../services/googleWorkspaceEmail';
+import { openGmailComposeForCandidate, buildGmailComposeUrl, markStageAsSentManually } from '../../services/googleWorkspaceEmail';
 import { EmailSettingsModal } from './EmailSettingsModal';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { toTitleCase } from '../../utils/textUtils';
@@ -20,6 +20,8 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [testSendingTwinkle, setTestSendingTwinkle] = useState(false);
+  const [unconfiguredModalStage, setUnconfiguredModalStage] = useState<EmailStageKey | null>(null);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [providerStatus, setProviderStatus] = useState<{
     hasApiKey: boolean;
     provider: string;
@@ -107,6 +109,12 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
   };
 
   const handleSendEmail = async (stageKey: EmailStageKey, forceResend: boolean = false) => {
+    // If SMTP / Resend credentials are not configured in Settings, open the dispatch assistance modal
+    if (!providerStatus?.hasApiKey) {
+      setUnconfiguredModalStage(stageKey);
+      return;
+    }
+
     setLoadingStage(stageKey);
     setConfirmResendStage(null);
     try {
@@ -119,7 +127,11 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
         showToast('success', res.message);
         onCandidateUpdated();
       } else {
-        showToast('error', res.message);
+        if (res.message?.includes('No email provider credentials configured') || res.message?.includes('None Configured')) {
+          setUnconfiguredModalStage(stageKey);
+        } else {
+          showToast('error', res.message);
+        }
       }
     } catch (err: any) {
       showToast('error', err.message || 'Failed to dispatch email');
@@ -355,15 +367,25 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                   </button>
 
                   {/* Open in Gmail (Google Workspace direct dispatch) */}
-                  <button
-                    onClick={() => handleOpenInGmail(key)}
-                    disabled={!active}
-                    className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  <a
+                    href={buildGmailComposeUrl({
+                      toEmail: candidate.email,
+                      subject: tpl.subject,
+                      bodyText: tpl.getBodyText(firstName, candidate)
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      markStageAsSentManually(candidate.id, key, 'Gmail Compose (Google Workspace)');
+                      showToast('info', 'Opened pre-filled email in Gmail web compose. Hit Send in Gmail to deliver from your Google Workspace account.');
+                      onCandidateUpdated();
+                    }}
+                    className={`px-2.5 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${!active ? 'pointer-events-none opacity-50' : ''}`}
                     title="Open directly in your Google Workspace / Gmail account to review and send"
                   >
                     <ExternalLink className="w-3.5 h-3.5 text-red-600" />
                     <span>Gmail Send</span>
-                  </button>
+                  </a>
 
                   {/* Send / Resend Button */}
                   {status === 'Sent' ? (
@@ -499,6 +521,186 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* Unconfigured Email Provider Dispatch Assistance Modal */}
+      {unconfiguredModalStage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-900 to-indigo-950 p-5 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-xl">
+                  <Mail className="w-5 h-5 text-purple-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Send Email to {toTitleCase(candidate.name)}</h3>
+                  <p className="text-xs text-purple-200">
+                    Stage: <strong className="text-white">{EMAIL_TEMPLATES[unconfiguredModalStage]?.stageName}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setUnconfiguredModalStage(null)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-purple-200 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 overflow-y-auto">
+              
+              {/* Why Did This Pop Up Banner */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-amber-950">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-bold block">Why didn't the email send automatically in the background?</span>
+                  <p className="opacity-90 leading-relaxed">
+                    Background automated delivery requires mail server credentials (<strong>SMTP_USER</strong> &amp; <strong>SMTP_PASS</strong>) in the project <strong>Settings</strong>.
+                    However, you can still deliver this onboarding email to <strong>{candidate.email}</strong> right now in 1 click!
+                  </p>
+                </div>
+              </div>
+
+              {/* Instant 1-Click Option: Gmail Web Compose */}
+              {(() => {
+                const tpl = EMAIL_TEMPLATES[unconfiguredModalStage];
+                const fName = extractFirstName(candidate.name);
+                const bodyText = tpl?.getBodyText(fName, candidate) || '';
+                const subject = tpl?.subject || '';
+                const gmailUrl = buildGmailComposeUrl({
+                  toEmail: candidate.email,
+                  subject,
+                  bodyText
+                });
+
+                return (
+                  <div className="space-y-4">
+                    <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                          Option 1: Instant 1-Click Send via Google Workspace
+                        </span>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-300">
+                          Ready Now
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Opens Gmail with recipient (<strong>{candidate.email}</strong>), subject, and personalized onboarding body pre-filled from your Workspace account.
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                        <a
+                          href={gmailUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => {
+                            markStageAsSentManually(candidate.id, unconfiguredModalStage, 'Gmail Compose (Google Workspace)');
+                            showToast('info', 'Opened pre-filled email in Gmail. Hit Send in Gmail to deliver!');
+                            onCandidateUpdated();
+                            setUnconfiguredModalStage(null);
+                          }}
+                          className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs text-center"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>Open in Gmail &amp; Mark as Sent</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            markStageAsSentManually(candidate.id, unconfiguredModalStage, 'External Email Client');
+                            showToast('success', `Marked ${tpl.stageName} as sent`);
+                            onCandidateUpdated();
+                            setUnconfiguredModalStage(null);
+                          }}
+                          className="px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                        >
+                          Mark as Sent
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Option 2: Copy Content */}
+                    <div className="border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                          Option 2: Copy Subject &amp; Body
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(subject);
+                              setCopiedItem('subject');
+                              setTimeout(() => setCopiedItem(null), 2500);
+                            }}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                          >
+                            {copiedItem === 'subject' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedItem === 'subject' ? 'Copied' : 'Copy Subject'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(bodyText);
+                              setCopiedItem('body');
+                              setTimeout(() => setCopiedItem(null), 2500);
+                            }}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                          >
+                            {copiedItem === 'body' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedItem === 'body' ? 'Copied' : 'Copy Body'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 max-h-40 overflow-y-auto text-xs font-sans text-slate-700 whitespace-pre-line leading-relaxed">
+                        {bodyText}
+                      </div>
+                    </div>
+
+                    {/* How to enable full background sending */}
+                    <details className="border border-slate-200 rounded-xl p-3.5 text-xs group">
+                      <summary className="font-bold text-slate-800 cursor-pointer flex items-center justify-between">
+                        <span>How to enable Background Sending (2-Min Setup)</span>
+                        <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
+                      </summary>
+                      <div className="pt-3 space-y-2 text-slate-600 leading-relaxed">
+                        <p>To have the <strong>"Send Now"</strong> button dispatch real emails directly in the background without opening Gmail:</p>
+                        <ol className="list-decimal pl-5 space-y-1 font-medium">
+                          <li>Open your Google Account: <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-purple-700 underline font-bold">Google App Passwords</a>.</li>
+                          <li>Generate a 16-character App Password for <strong>FieldAssist</strong>.</li>
+                          <li>In AI Studio top menu, click <strong>Settings</strong> and add:
+                            <div className="mt-1 space-y-0.5 font-mono text-[11px] bg-slate-100 p-2 rounded border border-slate-200">
+                              <div><strong>SMTP_USER</strong> = twinkle.verma@flick2know.com</div>
+                              <div><strong>SMTP_PASS</strong> = your-16-letter-app-password</div>
+                            </div>
+                          </li>
+                        </ol>
+                      </div>
+                    </details>
+                  </div>
+                );
+              })()}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setUnconfiguredModalStage(null)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -92,6 +92,58 @@ export function openGmailComposeForCandidate(candidateId: string, stageKey: Emai
 }
 
 /**
+ * Manually marks a stage as sent (e.g. after HR sends via Gmail or external client)
+ */
+export function markStageAsSentManually(
+  candidateId: string,
+  stageKey: EmailStageKey,
+  providerName: string = 'Gmail Compose (Google Workspace)'
+): Candidate {
+  const candidate = getCandidateById(candidateId);
+  if (!candidate) {
+    throw new Error('Candidate not found');
+  }
+
+  const template = EMAIL_TEMPLATES[stageKey];
+  const targetDate = calculateTargetDate(candidate.joiningDate, template?.daysBeforeJoining || 0);
+  const nowIso = new Date().toISOString();
+  const existingLog = candidate.emailAutomation?.stages?.[stageKey];
+
+  const updatedLog: EmailStageLog = {
+    id: existingLog?.id || `email-${candidate.id}-${stageKey}`,
+    stageKey,
+    stageName: template?.stageName || stageKey,
+    daysBeforeJoining: template?.daysBeforeJoining || 0,
+    targetDate,
+    recipientEmail: candidate.email,
+    recipientName: candidate.name,
+    subject: template?.subject || 'Pre-Onboarding Communication',
+    status: 'Sent',
+    sentAt: nowIso,
+    triggeredBy: 'hr_manual',
+    provider: providerName,
+    logs: [
+      ...(existingLog?.logs || []),
+      `[${new Date(nowIso).toLocaleTimeString()}] Sent via ${providerName}`
+    ]
+  };
+
+  const updatedCandidate: Candidate = {
+    ...candidate,
+    emailAutomation: {
+      stages: {
+        ...(candidate.emailAutomation?.stages || {}),
+        [stageKey]: updatedLog
+      } as Record<EmailStageKey, EmailStageLog>,
+      lastEvaluatedAt: nowIso
+    }
+  };
+
+  saveCandidate(updatedCandidate);
+  return updatedCandidate;
+}
+
+/**
  * Creates a mailto link fallback
  */
 export function buildMailtoUrl(options: {
