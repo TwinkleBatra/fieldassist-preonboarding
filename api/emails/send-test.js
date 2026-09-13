@@ -56,6 +56,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: dispatchResult.success,
       provider: dispatchResult.provider,
+      fromEmail: dispatchResult.fromEmail,
+      isSandboxWarning: dispatchResult.isSandboxWarning,
       messageId: dispatchResult.messageId,
       errorMessage: dispatchResult.errorMessage,
       targetEmail: toEmail,

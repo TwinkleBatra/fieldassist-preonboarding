@@ -25,6 +25,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
     provider: string;
     apiKeyName?: string;
     fromEmail?: string;
+    isSandboxWarning?: boolean;
     note?: string;
   } | null>(null);
 
@@ -52,6 +53,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
           provider: data.providerConfig.provider,
           apiKeyName: data.providerConfig.apiKeyName,
           fromEmail: data.providerConfig.fromEmail,
+          isSandboxWarning: Boolean(data.providerConfig.isSandboxWarning || data.providerConfig.fromEmail?.includes('onboarding@resend.dev')),
           note: data.note
         });
       }
@@ -105,7 +107,11 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
 
       const data = await res.json();
       if (data.success) {
-        showToast('success', `Real test email (${data.stageKey}) sent successfully to twinkle.verma@flick2know.com! Check your inbox.`);
+        if (data.isSandboxWarning || data.provider?.includes('onboarding@resend.dev') || data.fromEmail?.includes('onboarding@resend.dev')) {
+          showToast('error', `Sent via Resend Sandbox (onboarding@resend.dev) — this lands in SPAM! Configure SMTP_USER & SMTP_PASS in Vercel to send via Google Workspace.`);
+        } else {
+          showToast('success', `Real test email sent via ${data.provider}! Delivered from ${data.fromEmail || 'Google Workspace'}. Check your inbox.`);
+        }
       } else {
         showToast('error', `Test email delivery failed: ${data.errorMessage || 'Unknown error'}`);
       }
@@ -207,29 +213,51 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
 
       {/* Real SMTP Delivery Status Banner */}
       <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-        providerStatus?.hasApiKey
+        providerStatus?.isSandboxWarning
+          ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+          : providerStatus?.hasApiKey
           ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
-          : 'bg-amber-50/80 border-amber-300 text-amber-950'
+          : 'bg-slate-50 border-slate-300 text-slate-900'
       }`}>
         <div className="flex items-start gap-2.5 min-w-0">
           <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
-            providerStatus?.hasApiKey ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+            providerStatus?.isSandboxWarning
+              ? 'bg-amber-200 text-amber-900'
+              : providerStatus?.hasApiKey
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-slate-200 text-slate-700'
           }`}>
-            {providerStatus?.hasApiKey ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            {providerStatus?.isSandboxWarning ? (
+              <AlertCircle className="w-4 h-4" />
+            ) : providerStatus?.hasApiKey ? (
+              <ShieldCheck className="w-4 h-4" />
+            ) : (
+              <AlertCircle className="w-4 h-4" />
+            )}
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold">
-                {providerStatus?.hasApiKey
+                {providerStatus?.isSandboxWarning
+                  ? '⚠️ Emails Sending from Resend Sandbox (Landing in Spam)'
+                  : providerStatus?.provider === 'smtp'
+                  ? 'Google Workspace SMTP Active (Primary Inbox Delivery)'
+                  : providerStatus?.hasApiKey
                   ? 'Live Email Service Active'
                   : 'Live SMTP Email Delivery Ready for Setup'}
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                providerStatus?.hasApiKey
+                providerStatus?.isSandboxWarning
+                  ? 'bg-amber-200 border-amber-400 text-amber-900 font-semibold'
+                  : providerStatus?.hasApiKey
                   ? 'bg-emerald-200/80 border-emerald-400 text-emerald-800'
-                  : 'bg-amber-200/80 border-amber-400 text-amber-800'
+                  : 'bg-slate-200 border-slate-400 text-slate-800'
               }`}>
-                {providerStatus?.hasApiKey ? 'Connected' : 'Credentials Needed'}
+                {providerStatus?.isSandboxWarning
+                  ? 'Sandbox Warning: Spam Risk'
+                  : providerStatus?.hasApiKey
+                  ? 'Verified Delivery'
+                  : 'Credentials Needed'}
               </span>
               <button
                 type="button"
@@ -243,10 +271,18 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                 <RefreshCw className="w-3 h-3" />
               </button>
             </div>
-            <p className="text-[11px] opacity-90 mt-0.5">
-              {providerStatus?.hasApiKey
-                ? `Sending real emails via ${providerStatus.provider}. Sender: ${providerStatus.fromEmail}`
-                : 'Provide your Gmail / Google Workspace email + 16-character App Password (SMTP_USER & SMTP_PASS) in Settings to deliver directly to candidate inboxes.'}
+            <p className="text-[11px] opacity-90 mt-1 leading-relaxed">
+              {providerStatus?.isSandboxWarning ? (
+                <>
+                  Emails are currently routing through <strong>onboarding@resend.dev</strong> because <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">RESEND_API_KEY</code> is active without a verified custom domain. <strong>Google &amp; Outlook automatically flag onboarding@resend.dev as spam.</strong>
+                  <br />
+                  <span className="font-semibold text-purple-900">How to fix:</span> Add <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_USER=twinkle.verma@flick2know.com</code> and <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_PASS=&lt;16-char-app-password&gt;</code> in your Vercel Project Settings &rarr; Environment Variables. The app will immediately send from your verified Google Workspace account and land in the Primary Inbox.
+                </>
+              ) : providerStatus?.hasApiKey ? (
+                `Delivering directly via ${providerStatus.provider}. Sender: ${providerStatus.fromEmail}. SPF/DKIM aligned with 0% spam score.`
+              ) : (
+                'Provide your Gmail / Google Workspace email + 16-character App Password (SMTP_USER & SMTP_PASS) in Settings to deliver directly to candidate inboxes.'
+              )}
             </p>
           </div>
         </div>

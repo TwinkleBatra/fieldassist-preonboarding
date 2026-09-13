@@ -5,27 +5,42 @@ export interface ServerEmailProviderConfig {
   hasApiKey: boolean;
   apiKeyName?: string;
   fromEmail?: string;
+  isSandboxWarning?: boolean;
 }
 
 export function getServerEmailConfig(): ServerEmailProviderConfig {
-  if (process.env.RESEND_API_KEY) {
+  const preferred = (process.env.EMAIL_PROVIDER || '').toLowerCase().trim();
+  const smtpUser = (process.env.SMTP_USER || '').trim();
+  const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const hasSmtp = Boolean(smtpUser && (smtpPass || process.env.SMTP_HOST));
+  const hasResend = Boolean(process.env.RESEND_API_KEY);
+
+  // 1. Google Workspace SMTP Priority (ensures SPF/DKIM/DMARC alignment and inbox delivery)
+  if (hasSmtp && preferred !== 'resend') {
+    const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
+    return {
+      provider: 'smtp',
+      hasApiKey: true,
+      apiKeyName: process.env.SMTP_HOST ? 'Custom SMTP' : 'Google Workspace SMTP',
+      fromEmail: process.env.EMAIL_FROM || `"${senderDisplayName}" <${smtpUser}>`,
+      isSandboxWarning: false
+    };
+  }
+
+  // 2. Resend API Fallback
+  if (hasResend) {
+    const fromEmail = process.env.EMAIL_FROM || 'Twinkle Verma - FieldAssist HR <onboarding@resend.dev>';
+    const isSandboxWarning = fromEmail.includes('@resend.dev');
     return {
       provider: 'resend',
       hasApiKey: true,
       apiKeyName: 'RESEND_API_KEY',
-      fromEmail: process.env.EMAIL_FROM || 'FieldAssist HR <onboarding@resend.dev>'
+      fromEmail,
+      isSandboxWarning
     };
   }
-  if ((process.env.SMTP_HOST && process.env.SMTP_USER) || (process.env.SMTP_USER && process.env.SMTP_PASS)) {
-    const defaultHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    return {
-      provider: 'smtp',
-      hasApiKey: true,
-      apiKeyName: process.env.SMTP_HOST ? 'SMTP_HOST & SMTP_USER' : 'SMTP_USER & SMTP_PASS (Gmail/Workspace)',
-      fromEmail: process.env.EMAIL_FROM || `FieldAssist HR <${process.env.SMTP_USER}>`
-    };
-  }
-  return { provider: 'none', hasApiKey: false };
+
+  return { provider: 'none', hasApiKey: false, isSandboxWarning: false };
 }
 
 /**

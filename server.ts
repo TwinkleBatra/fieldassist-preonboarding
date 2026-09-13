@@ -182,9 +182,12 @@ async function startServer() {
         bodyHtml: emailHtml
       });
 
+      const serverEmailConfig = getServerEmailConfig();
       res.json({
         success: dispatchResult.success,
         provider: dispatchResult.provider,
+        fromEmail: serverEmailConfig.fromEmail,
+        isSandboxWarning: serverEmailConfig.isSandboxWarning,
         messageId: dispatchResult.messageId,
         errorMessage: dispatchResult.errorMessage,
         targetEmail,
