@@ -21,9 +21,14 @@ export function getAppBaseUrl(): string {
 }
 
 /**
- * Generates the candidate onboarding portal link with their access code
+ * Generates the candidate onboarding portal link with their unique access code.
+ * Format: https://fieldassist-preonboarding.vercel.app/?code=FA-XXXX
  */
-export function getCandidateAccessUrl(accessCode: string): string {
-  const base = getAppBaseUrl().replace(/\/+$/, '');
-  return `${base}?accessCode=${encodeURIComponent(accessCode)}`;
+export function getCandidateAccessUrl(accessCode: string, origin?: string): string {
+  const base = (origin || getAppBaseUrl()).replace(/\/+$/, '');
+  const cleanCode = (accessCode || '').trim();
+  if (!cleanCode) {
+    return base;
+  }
+  return `${base}/?code=${encodeURIComponent(cleanCode)}`;
 }

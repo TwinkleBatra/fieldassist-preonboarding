@@ -6,8 +6,8 @@ import { getHRBPForDepartment } from '../utils/hrbp';
 import { syncCandidateToGoogleSheets, syncDocumentUpdateToGoogleSheets, syncDocumentAndCandidate } from './googleSheetsSync';
 
 const STORAGE_KEYS = {
-  CANDIDATES: 'fieldassist_candidates_v3',
-  ACTIVE_CANDIDATE_ID: 'fieldassist_active_candidate_id_v1',
+  CANDIDATES: 'fieldassist_candidates_v5',
+  ACTIVE_CANDIDATE_ID: 'fieldassist_active_candidate_id_v3',
   FAQS: 'fieldassist_faqs_v1',
   QUERIES: 'fieldassist_queries_v1',
   LOCATIONS: 'fieldassist_locations_v1'
@@ -80,21 +80,9 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
 };
 
 export const ensureAccessCode = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
-  if (candidate.name.toLowerCase().includes('ananya')) {
-    if (candidate.accessCode !== 'FA-1001') {
-      return { candidate: { ...candidate, accessCode: 'FA-1001' }, updated: true };
-    }
-  }
   if (candidate.accessCode) return { candidate, updated: false };
 
-  let code = 'FA-1001';
-  if (candidate.name.toLowerCase().includes('ananya') || candidate.id === 'cand-4') code = 'FA-1001';
-  else if (candidate.id === 'cand-1') code = 'FA-1006';
-  else if (candidate.id === 'cand-2') code = 'FA-1002';
-  else if (candidate.id === 'cand-3') code = 'FA-1003';
-  else if (candidate.id === 'cand-5') code = 'FA-1005';
-  else code = `FA-${Math.floor(1000 + Math.random() * 9000)}`;
-
+  const code = `FA-${Math.floor(1000 + Math.random() * 9000)}`;
   return {
     candidate: { ...candidate, accessCode: code },
     updated: true
@@ -136,27 +124,6 @@ export const ensureLatestSchedule = (candidate: Candidate): { candidate: Candida
 export const ensureUpcomingJoiningDate = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
   let updated = false;
   let newCand = { ...candidate };
-
-  if (newCand.id === 'cand-1' && (newCand.joiningDate === '2026-08-18' || newCand.joiningDate.startsWith('2026-08-'))) {
-    newCand.joiningDate = '2026-09-24';
-    updated = true;
-  }
-  if (newCand.id === 'cand-2' && (newCand.joiningDate === '2026-08-20' || newCand.joiningDate.startsWith('2026-08-'))) {
-    newCand.joiningDate = '2026-09-28';
-    updated = true;
-  }
-  if (newCand.id === 'cand-3' && (newCand.joiningDate === '2026-08-28' || newCand.joiningDate.startsWith('2026-08-'))) {
-    newCand.joiningDate = '2026-09-12';
-    updated = true;
-  }
-  if (newCand.id === 'cand-4' && newCand.joiningDate === '2026-08-25') {
-    newCand.joiningDate = '2026-09-18';
-    updated = true;
-  }
-  if (newCand.id === 'cand-5' && newCand.joiningDate === '2026-09-01') {
-    newCand.joiningDate = '2026-09-25';
-    updated = true;
-  }
 
   if (newCand.reportingTime === '10:30 AM') {
     newCand.reportingTime = '11:00 AM';

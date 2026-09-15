@@ -190,7 +190,7 @@ export interface Candidate {
   hrbp: HRContact;
   
   status: OnboardingStatus;
-  formStatus: 'Not Started' | 'In Progress' | 'Submitted' | 'Verified';
+  formStatus: 'Not Started' | 'In Progress' | 'Submitted' | 'Verified' | 'Completed';
   
   formData: CandidateFormData;
   documents: RequiredDocument[];

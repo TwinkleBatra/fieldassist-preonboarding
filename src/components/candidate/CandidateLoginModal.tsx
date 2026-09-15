@@ -9,16 +9,27 @@ interface CandidateLoginModalProps {
   onLogin: (candidate: Candidate) => void;
   onSwitchToHR: () => void;
   candidates: Candidate[];
+  initialCode?: string;
 }
 
 export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
   isOpen,
   onLogin,
   onSwitchToHR,
-  candidates
+  candidates,
+  initialCode
 }) => {
-  const [accessInput, setAccessInput] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [accessInput, setAccessInput] = useState(initialCode || '');
+  const [errorMsg, setErrorMsg] = useState(
+    initialCode ? `Access Code "${initialCode}" was not found in the pre-onboarding database. Please verify or try entering your registered personal email below.` : ''
+  );
+
+  useEffect(() => {
+    if (initialCode && !accessInput) {
+      setAccessInput(initialCode);
+      setErrorMsg(`Access Code "${initialCode}" was not found in the pre-onboarding database. Please verify or try entering your registered personal email below.`);
+    }
+  }, [initialCode]);
 
   if (!isOpen) return null;
 

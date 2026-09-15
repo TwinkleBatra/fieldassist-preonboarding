@@ -44,6 +44,14 @@ export const OFFICIAL_HRBPS: Record<string, HRContact> = {
     phone: '+91 98333 44556',
     whatsapp: '+91 98333 44556',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+  },
+  nimisha: {
+    name: 'Nimisha',
+    role: 'HR Business Partner',
+    email: 'Nimi@01flick2know.com',
+    phone: '',
+    whatsapp: '',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80'
   }
 };
 

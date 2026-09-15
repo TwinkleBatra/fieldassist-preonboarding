@@ -67,6 +67,7 @@ export default function App() {
   const [editingLocation, setEditingLocation] = useState<JoiningLocation | null>(null);
   const [inspectCandidate, setInspectCandidate] = useState<Candidate | null>(null);
   const [candidateToEdit, setCandidateToEdit] = useState<Candidate | null>(null);
+  const [unmatchedUrlCode, setUnmatchedUrlCode] = useState<string>('');
 
   // Load initial data from storage and check URL parameters for candidate auto-login
   useEffect(() => {
@@ -85,21 +86,16 @@ export default function App() {
       body: JSON.stringify({ candidates: loadedCandidates })
     }).catch(() => {});
 
-    // Sync Firestore data in background
-    syncCandidatesWithFirestore().then(synced => {
-      if (synced && synced.length > 0) {
-        setCandidates(synced);
-        fetch('/api/emails/sync-candidates', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ candidates: synced })
-        }).catch(() => {});
-      }
-    }).catch(console.error);
-
     // Parse URL query parameter (e.g. ?accessCode=FA-1001 or ?code=FA-1002)
     const urlParams = new URLSearchParams(window.location.search);
     const codeParam = urlParams.get('accessCode') || urlParams.get('code') || urlParams.get('email');
+
+    // Check for explicit view param
+    const viewParam = urlParams.get('view');
+    if (viewParam === 'hr') {
+      setActiveView('hr');
+      setIsHRAuthenticated(true);
+    }
 
     if (codeParam) {
       const q = codeParam.trim().toLowerCase();
@@ -114,16 +110,50 @@ export default function App() {
         setActiveCandidateId(matched.id);
         setIsCandidateLoggedIn(true);
         setActiveView('candidate');
-        return;
+      } else {
+        // Code param was provided but not found in current dataset
+        setUnmatchedUrlCode(codeParam);
+        setIsCandidateLoggedIn(false);
+        setIsCandidateLoginModalOpen(true);
+      }
+    } else {
+      // No code in URL: if on candidate view, do NOT auto-login as any candidate
+      if (viewParam !== 'hr') {
+        setIsCandidateLoggedIn(false);
+        setIsCandidateLoginModalOpen(true);
       }
     }
 
-    // Default to active candidate in storage
-    const activeId = getActiveCandidateId();
-    setActiveCandidateIdState(activeId);
+    // Sync Firestore data in background
+    syncCandidatesWithFirestore().then(synced => {
+      if (synced && synced.length > 0) {
+        setCandidates(synced);
+        // If codeParam was passed and previously unmatched, try matching against synced candidates
+        if (codeParam) {
+          const q = codeParam.trim().toLowerCase();
+          const remoteMatch = synced.find(c =>
+            c.email.toLowerCase() === q ||
+            (c.accessCode && c.accessCode.toLowerCase() === q) ||
+            c.id.toLowerCase() === q
+          );
+          if (remoteMatch) {
+            setActiveCandidateIdState(remoteMatch.id);
+            setActiveCandidateId(remoteMatch.id);
+            setIsCandidateLoggedIn(true);
+            setIsCandidateLoginModalOpen(false);
+            setActiveView('candidate');
+          }
+        }
+        fetch('/api/emails/sync-candidates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ candidates: synced })
+        }).catch(() => {});
+      }
+    }).catch(console.error);
   }, []);
 
-  const activeCandidate = candidates.find(c => c.id === activeCandidateId) || candidates[0];
+  const activeCandidate = candidates.find(c => c.id === activeCandidateId) || null;
 
   const handleSelectCandidate = (id: string) => {
     setActiveCandidateIdState(id);
@@ -503,6 +533,7 @@ export default function App() {
           setIsHRAuthModalOpen(true);
         }}
         candidates={candidates}
+        initialCode={unmatchedUrlCode}
       />
 
       <HRAuthModal

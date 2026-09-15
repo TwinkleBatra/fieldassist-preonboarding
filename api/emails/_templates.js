@@ -33,12 +33,13 @@ Corporate HQ: Plot No. 12, Sector 44, Gurugram, Haryana 122003, India
 Official HR Onboarding Communication | twinkle.verma@flick2know.com
 `;
 
-export function getFullEmailContent(stageKey, candidate, origin = 'https://fieldassist.com') {
+export function getFullEmailContent(stageKey, candidate, origin = 'https://fieldassist-preonboarding.vercel.app') {
   const firstName = extractFirstName(candidate.name);
   const joiningDateFormatted = formatJoiningDate(candidate.joiningDate);
   const reportingTime = candidate.reportingTime || '10:30 AM';
-  const accessCode = candidate.accessCode || 'FA-PORTAL';
-  const portalUrl = origin ? `${origin}/?code=${accessCode}` : `https://fieldassist.com/?code=${accessCode}`;
+  const accessCode = (candidate.accessCode || candidate.id || 'FA-PORTAL').trim();
+  const base = (origin || 'https://fieldassist-preonboarding.vercel.app').replace(/\/+$/, '');
+  const portalUrl = accessCode ? `${base}/?code=${encodeURIComponent(accessCode)}` : base;
   
   const isRemote = candidate.workMode === 'Remote';
   const locationName = isRemote ? 'Remote / Work From Home' : (candidate.joiningLocation?.name || candidate.officeCity || 'Gurgaon Corporate Hub');
@@ -141,6 +142,7 @@ Over the next few days, we’ll be sharing important resources and information t
 
 For now, here’s what you can expect:
 • Access to our AMMO pre-read, to help you get familiar with FieldAssist: ${ammoPrereadUrl}
+• Candidate Pre-Onboarding Portal: ${portalUrl} (Access Code: ${accessCode})
 
 In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
 
@@ -164,9 +166,13 @@ ${FOOTER_TEXT}`;
     
     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
       <p style="font-weight: bold; margin: 0 0 8px 0; color: #1e1b4b;">Here’s what you can explore today:</p>
-      <ul style="padding-left: 20px; margin: 0;">
+      <ul style="padding-left: 20px; margin: 0 0 16px 0;">
         <li style="margin-bottom: 6px;">Access our <a href="${ammoPrereadUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; text-decoration: underline;">AMMO Pre-Read Guide</a> to get familiar with FieldAssist, our story, and our product impact.</li>
       </ul>
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
+        <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">Open Your Candidate Portal &rarr;</a>
+        <div style="margin-top: 6px; font-size: 12px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
+      </div>
     </div>
 
     <p style="font-size: 14px; color: #334155;">
@@ -196,6 +202,8 @@ From powerful strategy sessions to sunset vibes, it was the perfect mix of ambit
 
 See the Highlights: ${linkedinUrl}
 (Yes, that energy is real. Yes, you’ll love it here.)
+
+• Check your Onboarding Checklist: ${portalUrl} (Access Code: ${accessCode})
 
 Here’s to a journey full of impact, learning, and growth.
 
@@ -231,6 +239,12 @@ ${FOOTER_TEXT}`;
       </p>
       <p style="font-style: italic; color: #64748b; font-size: 12px; margin: 0;">(Yes, that energy is real. Yes, you’ll love it here.)</p>
     </div>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+      <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: bold; color: #1e1b4b;">Pre-Onboarding Status:</p>
+      <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 9px 18px; border-radius: 6px; font-weight: bold; font-size: 12px;">View Candidate Portal &rarr;</a>
+      <div style="margin-top: 6px; font-size: 11px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
+    </div>
     
     <p style="margin-top: 24px;">Here’s to a journey full of impact, learning, and growth.</p>
     <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
@@ -251,6 +265,8 @@ To help you get familiar with our culture, people, and what makes FA a great pla
 • LinkedIn Page - Follow us for company updates and stories from the field: ${linkedinUrl}
 • Instagram - A peek into our people, events, and behind-the-scenes moments: ${instagramUrl}
 • Latest Pathfinder's video - Hear stories straight from our employees about their growth and impact: ${pathfinderVideoUrl}
+
+• Your Pre-Onboarding Checklist & Day 1 Info: ${portalUrl} (Access Code: ${accessCode})
 
 If you have any questions, feel free to reach out to HR or reply to this email.
 
@@ -275,12 +291,16 @@ ${FOOTER_TEXT}`;
     <p>To help you get familiar with our culture, people, and what makes FA a great place to work, we’ve put together a few useful resources just for you:</p>
     
     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <ul style="padding-left: 20px; margin: 0; line-height: 1.8; font-size: 14px;">
+      <ul style="padding-left: 20px; margin: 0 0 16px 0; line-height: 1.8; font-size: 14px;">
         <li><strong>FA Newsletter</strong> - Stay updated with all the exciting happenings! <a href="${newsletterUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Read Newsletter]</a></li>
         <li><strong>LinkedIn Page</strong> - Follow us for company updates and stories from the field: <a href="${linkedinUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Visit LinkedIn]</a></li>
         <li><strong>Instagram</strong> - A peek into our people, events, and behind-the-scenes moments: <a href="${instagramUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Follow Instagram]</a></li>
         <li><strong>Latest Pathfinder's video</strong> - Hear stories straight from our employees about their growth and impact: <a href="${pathfinderVideoUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Watch Video]</a></li>
       </ul>
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">View Pre-Onboarding Portal &rarr;</a>
+        <div style="margin-top: 6px; font-size: 12px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
+      </div>
     </div>
 
     <p style="font-size: 14px; color: #334155;">If you have any questions, feel free to reach out to HR or reply to this email.</p>
@@ -331,6 +351,10 @@ Dress Code: ${dressCode}
 🗓️ WHAT YOUR DAY LOOKS LIKE
 ${scheduleText}
 
+🔗 CANDIDATE PORTAL & DAY 1 PASS
+Access your digital onboarding portal anytime:
+${portalUrl} (Access Code: ${accessCode})
+
 💻 A QUICK NOTE
 You don't need to carry any physical documents tomorrow.
 All required documents are collected online, and the remaining employment formalities will be completed through Keka.
@@ -365,6 +389,13 @@ ${FOOTER_TEXT}`;
 
     <h3 style="color: #1e1b4b; margin-top: 24px; margin-bottom: 8px; font-size: 15px;">🗓️ WHAT YOUR DAY LOOKS LIKE</h3>
     ${scheduleHtml}
+
+    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 18px; border-radius: 8px; margin: 24px 0;">
+      <h4 style="margin-top: 0; color: #166534; font-size: 14px;">🔗 Candidate Onboarding Portal</h4>
+      <p style="margin: 0 0 10px 0; font-size: 13px; color: #15803d;">You can view your onboarding checklist and campus details directly in your portal:</p>
+      <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">Open Your Candidate Portal &rarr;</a>
+      <div style="margin-top: 6px; font-size: 12px; color: #166534;">Access Code: <strong style="font-family: monospace;">${accessCode}</strong></div>
+    </div>
 
     <div style="background-color: #f5f3ff; border: 1px solid #ddd6fe; padding: 16px; border-radius: 8px; margin: 24px 0;">
       <h4 style="margin-top: 0; color: #4c1d95; font-size: 14px;">💻 A QUICK NOTE</h4>
