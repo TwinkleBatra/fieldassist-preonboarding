@@ -3,6 +3,8 @@ import { getEmailSettings } from './emailSettings';
 import { formatJoiningDate } from '../utils/dateUtils';
 import { toTitleCase } from '../utils/textUtils';
 import { getCandidateAccessUrl } from '../utils/appUrl';
+import { renderFirestoreTemplate } from './emailRenderer';
+import { getCachedTemplates } from './emailStore';
 
 export interface EmailTemplateDefinition {
   key: EmailStageKey;
@@ -144,62 +146,12 @@ ${OFFICIAL_FOOTER_TEXT}`;
     subject: 'Welcome to FieldAssist – Your Onboarding Journey Starts Here!',
     getFirstName: extractFirstName,
     getBodyText: (firstName: string, candidate?: Candidate) => {
-      const settings = getEmailSettings();
-      const accessCode = (candidate?.accessCode || candidate?.id || 'FA-PORTAL').trim();
-      const portalUrl = getCandidateAccessUrl(accessCode);
-      return `Hi ${firstName},
-
-Congratulations once again—and a warm welcome to FieldAssist!
-
-We’re thrilled to have you as part of our growing team. Your journey with us is just beginning, and we’re committed to making your onboarding experience smooth, engaging, and memorable.
-
-Over the next few days, we’ll be sharing important resources and information to help you prepare for your joining.
-
-For now, here’s what you can expect:
-• Access to our AMMO pre-read, to help you get familiar with FieldAssist: ${settings.ammoPrereadUrl}
-• Candidate Pre-Onboarding Portal: ${portalUrl} (Access Code: ${accessCode})
-
-In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
-
-Cheers!
-
-Thanks & Regards,
-Twinkle Verma | FieldAssist HR
-${OFFICIAL_FOOTER_TEXT}`;
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      return renderFirestoreTemplate('welcome_7d', cand, firstName).bodyText;
     },
     getHtmlContent: (firstName: string, candidate?: Candidate) => {
-      const settings = getEmailSettings();
-      const accessCode = (candidate?.accessCode || candidate?.id || 'FA-PORTAL').trim();
-      const portalUrl = getCandidateAccessUrl(accessCode);
-      return `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-  <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 24px 32px; text-align: left;">
-    <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">FieldAssist Onboarding</span>
-    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">Welcome to FieldAssist!</h1>
-  </div>
-  <div style="padding: 32px;">
-    <p style="margin-top: 0; font-size: 16px;">Hi <strong>${firstName}</strong>,</p>
-    <p>Congratulations once again—and a warm welcome to FieldAssist!</p>
-    <p>We’re thrilled to have you as part of our growing team. Your journey with us is just beginning, and we’re committed to making your onboarding experience smooth, engaging, and memorable.</p>
-    <p>Over the next few days, we’ll be sharing important resources and information to help you prepare for your joining.</p>
-    
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <p style="font-weight: bold; margin: 0 0 8px 0; color: #1e1b4b;">Here’s what you can explore today:</p>
-      <ul style="padding-left: 20px; margin: 0 0 16px 0;">
-        <li style="margin-bottom: 6px;">Access our <a href="${settings.ammoPrereadUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">AMMO pre-read guide</a>, to help you get familiar with FieldAssist.</li>
-      </ul>
-      <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
-        <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">Open Your Candidate Portal &rarr;</a>
-        <div style="margin-top: 6px; font-size: 12px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
-      </div>
-    </div>
-
-    <p style="font-size: 14px; color: #334155;">In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@flick2know.com</a>).</p>
-    <p style="margin-top: 24px;">Cheers!</p>
-    <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
-    ${OFFICIAL_FOOTER_HTML}
-  </div>
-</div>`;
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      return renderFirestoreTemplate('welcome_7d', cand, firstName).bodyHtml;
     }
   },
 
@@ -210,79 +162,12 @@ ${OFFICIAL_FOOTER_TEXT}`;
     subject: 'You + FieldAssist = Let’s Get Started!',
     getFirstName: extractFirstName,
     getBodyText: (firstName: string, candidate?: Candidate) => {
-      const settings = getEmailSettings();
-      const accessCode = (candidate?.accessCode || candidate?.id || 'FA-PORTAL').trim();
-      const portalUrl = getCandidateAccessUrl(accessCode);
-      return `Hi ${firstName},
-
-We’re counting down the days till you officially become a part of the FieldAssist tribe, but we couldn’t wait to give you a glimpse of what’s in store.
-
-Before your Day 1, we’d love to give you a peek into what it feels like to be at FA.
-
-A Culture that Walks the Talk:
-• 4× Great Place to Work-Certified – Our culture isn’t a tagline. It’s how we treat people, lead teams, and celebrate progress.
-• Bootstrapped & Profitable – We’ve built FA on passion, not funding. And we’ve grown year after year with agility and intention.
-• Voices from the Inside – Hear directly from our teammates about what makes FA special.
-
-Culture in Motion: Our Goa Offsite:
-Earlier this year, we brought the entire company to Goa, not just for fun, but for alignment, celebration, and forward thinking.
-From powerful strategy sessions to sunset vibes, it was the perfect mix of ambition and culture.
-
-See the Highlights: ${settings.linkedinUrl}
-(Yes, that energy is real. Yes, you’ll love it here.)
-
-• Check your Onboarding Checklist: ${portalUrl} (Access Code: ${accessCode})
-
-Here’s to a journey full of impact, learning, and growth.
-
-Thanks & Regards,
-Twinkle Verma | FieldAssist HR
-${OFFICIAL_FOOTER_TEXT}`;
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      return renderFirestoreTemplate('culture_5d', cand, firstName).bodyText;
     },
     getHtmlContent: (firstName: string, candidate?: Candidate) => {
-      const settings = getEmailSettings();
-      const accessCode = (candidate?.accessCode || candidate?.id || 'FA-PORTAL').trim();
-      const portalUrl = getCandidateAccessUrl(accessCode);
-      return `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-  <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 24px 32px; text-align: left;">
-    <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">Life at FieldAssist</span>
-    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">You + FieldAssist = Let’s Get Started!</h1>
-  </div>
-  <div style="padding: 32px;">
-    <p style="margin-top: 0; font-size: 16px;">Hi <strong>${firstName}</strong>,</p>
-    <p>We’re counting down the days till you officially become a part of the FieldAssist tribe, but we couldn’t wait to give you a glimpse of what’s in store.</p>
-    <p>Before your Day 1, we’d love to give you a peek into what it feels like to be at FA.</p>
-    
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <h3 style="color: #1e1b4b; margin: 0 0 10px 0; font-size: 15px;">A Culture that Walks the Talk</h3>
-      <ul style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.7;">
-        <li style="margin-bottom: 6px;"><strong>4× Great Place to Work-Certified</strong> – Our culture isn’t a tagline. It’s how we treat people, lead teams, and celebrate progress.</li>
-        <li style="margin-bottom: 6px;"><strong>Bootstrapped &amp; Profitable</strong> – We’ve built FA on passion, not funding. And we’ve grown year after year with agility and intention.</li>
-        <li style="margin-bottom: 6px;"><strong>Voices from the Inside</strong> – Hear directly from our teammates about what makes FA special.</li>
-      </ul>
-    </div>
-
-    <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <h3 style="color: #312e81; margin: 0 0 8px 0; font-size: 15px;">Culture in Motion: Our Goa Offsite</h3>
-      <p style="font-size: 14px; margin: 0 0 12px 0;">Earlier this year, we brought the entire company to Goa, not just for fun, but for alignment, celebration, and forward thinking. From powerful strategy sessions to sunset vibes, it was the perfect mix of ambition and culture.</p>
-      <p style="margin: 0 0 10px 0;">
-        <a href="${settings.linkedinUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">See the Highlights &rarr;</a>
-      </p>
-      <p style="font-style: italic; color: #64748b; font-size: 12px; margin: 0;">(Yes, that energy is real. Yes, you’ll love it here.)</p>
-    </div>
-
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
-      <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: bold; color: #1e1b4b;">Pre-Onboarding Status:</p>
-      <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 9px 18px; border-radius: 6px; font-weight: bold; font-size: 12px;">View Candidate Portal &rarr;</a>
-      <div style="margin-top: 6px; font-size: 11px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
-    </div>
-    
-    <p style="margin-top: 24px;">Here’s to a journey full of impact, learning, and growth.</p>
-    <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
-    ${OFFICIAL_FOOTER_HTML}
-  </div>
-</div>`;
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      return renderFirestoreTemplate('culture_5d', cand, firstName).bodyHtml;
     }
   },
 
@@ -293,75 +178,12 @@ ${OFFICIAL_FOOTER_TEXT}`;
     subject: 'Getting Started at FieldAssist – Resources to Know Us Better!',
     getFirstName: extractFirstName,
     getBodyText: (firstName: string, candidate?: Candidate) => {
-      const settings = getEmailSettings();
-      const accessCode = (candidate?.accessCode || candidate?.id || 'FA-PORTAL').trim();
-      const portalUrl = getCandidateAccessUrl(accessCode);
-      return `Hi ${firstName},
-
-Hope you enjoyed the sneak peek we shared earlier about life at FieldAssist — that was just the beginning!
-
-Your journey with us is just getting started, and we’re here to ensure it begins on a smooth and exciting note.
-
-To help you get familiar with our culture, people, and what makes FA a great place to work, we’ve put together a few useful resources just for you:
-
-• FA Newsletter - Stay updated with all the exciting happenings: ${settings.newsletterUrl}
-• LinkedIn Page - Follow us for company updates and stories from the field: ${settings.linkedinUrl}
-• Instagram - A peek into our people, events, and behind-the-scenes moments: ${settings.instagramUrl}
-• Latest Pathfinder's video - Hear stories straight from our employees about their growth and impact: ${settings.pathfinderVideoUrl}
-
-• Your Pre-Onboarding Checklist & Day 1 Info: ${portalUrl} (Access Code: ${accessCode})
-
-If you have any questions, feel free to reach out to HR or reply to this email.
-
-You can also rate us at:
-• AmbitionBox: ${settings.ambitionBoxUrl}
-• Glassdoor: ${settings.glassdoorUrl}
-
-Thanks & Regards,
-Twinkle Verma | FieldAssist HR
-${OFFICIAL_FOOTER_TEXT}`;
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      return renderFirestoreTemplate('comm_3d', cand, firstName).bodyText;
     },
     getHtmlContent: (firstName: string, candidate?: Candidate) => {
-      const settings = getEmailSettings();
-      const accessCode = (candidate?.accessCode || candidate?.id || 'FA-PORTAL').trim();
-      const portalUrl = getCandidateAccessUrl(accessCode);
-      return `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-  <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 24px 32px; text-align: left;">
-    <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">FieldAssist Resources</span>
-    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">Getting Started at FieldAssist</h1>
-  </div>
-  <div style="padding: 32px;">
-    <p style="margin-top: 0; font-size: 16px;">Hi <strong>${firstName}</strong>,</p>
-    <p>Hope you enjoyed the sneak peek we shared earlier about life at FieldAssist — that was just the beginning!</p>
-    <p>Your journey with us is just getting started, and we’re here to ensure it begins on a smooth and exciting note.</p>
-    <p>To help you get familiar with our culture, people, and what makes FA a great place to work, we’ve put together a few useful resources just for you:</p>
-    
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <ul style="padding-left: 20px; margin: 0 0 16px 0; line-height: 1.8; font-size: 14px;">
-        <li><strong>FA Newsletter</strong> - Stay updated with all the exciting happenings! <a href="${settings.newsletterUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Read Newsletter]</a></li>
-        <li><strong>LinkedIn Page</strong> - Follow us for company updates and stories from the field: <a href="${settings.linkedinUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Visit LinkedIn]</a></li>
-        <li><strong>Instagram</strong> - A peek into our people, events, and behind-the-scenes moments: <a href="${settings.instagramUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Follow Instagram]</a></li>
-        <li><strong>Latest Pathfinder's video</strong> - Hear stories straight from our employees about their growth and impact: <a href="${settings.pathfinderVideoUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Watch Video]</a></li>
-      </ul>
-      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
-        <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">View Pre-Onboarding Portal &rarr;</a>
-        <div style="margin-top: 6px; font-size: 12px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
-      </div>
-    </div>
-
-    <p style="font-size: 14px; color: #334155;">If you have any questions, feel free to reach out to HR or reply to this email.</p>
-    
-    <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin: 18px 0; font-size: 13px;">
-      You can also check what teammates say about us at: 
-      <a href="${settings.ambitionBoxUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; margin-left: 4px;">AmbitionBox</a> &bull; 
-      <a href="${settings.glassdoorUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; margin-left: 4px;">Glassdoor</a>
-    </div>
-    
-    <p style="margin-top: 24px; margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
-    ${OFFICIAL_FOOTER_HTML}
-  </div>
-</div>`;
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      return renderFirestoreTemplate('comm_3d', cand, firstName).bodyHtml;
     }
   },
 

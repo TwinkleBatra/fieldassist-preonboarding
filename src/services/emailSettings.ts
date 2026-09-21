@@ -1,3 +1,5 @@
+import { AMMO_PREREAD_URL, FIELDASSIST_LINKS } from '../constants/links';
+
 export interface EmailSettings {
   ammoPrereadUrl: string;
   newsletterUrl: string;
@@ -11,13 +13,13 @@ export interface EmailSettings {
 const STORAGE_KEY = 'fieldassist_email_settings_v1';
 
 export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
-  ammoPrereadUrl: 'https://www.fieldassist.com/ammo-preread',
-  newsletterUrl: 'https://www.fieldassist.com/newsletter',
-  linkedinUrl: 'https://www.linkedin.com/company/fieldassist',
-  instagramUrl: 'https://www.instagram.com/fieldassist/',
-  pathfinderVideoUrl: 'https://www.youtube.com/@FieldAssist',
-  ambitionBoxUrl: 'https://www.ambitionbox.com/reviews/fieldassist-reviews',
-  glassdoorUrl: 'https://www.glassdoor.co.in/Reviews/FieldAssist-Reviews-E1204893.htm'
+  ammoPrereadUrl: AMMO_PREREAD_URL,
+  newsletterUrl: FIELDASSIST_LINKS.newsletter,
+  linkedinUrl: FIELDASSIST_LINKS.linkedin,
+  instagramUrl: FIELDASSIST_LINKS.instagram,
+  pathfinderVideoUrl: FIELDASSIST_LINKS.youtube,
+  ambitionBoxUrl: FIELDASSIST_LINKS.ambitionBox,
+  glassdoorUrl: FIELDASSIST_LINKS.glassdoor
 };
 
 export function getEmailSettings(): EmailSettings {

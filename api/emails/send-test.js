@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
     const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
     const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const origin = hostHeader ? `${protocol}://${hostHeader}` : 'https://fieldassist.com';
+    const origin = hostHeader ? `${protocol}://${hostHeader}` : (process.env.APP_URL || 'https://fieldassist-preonboarding.vercel.app');
 
     const mockCandidate = {
       id: 'test-preview-candidate',

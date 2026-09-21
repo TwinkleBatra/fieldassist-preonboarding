@@ -1,4 +1,5 @@
 // Production-grade email templates for FieldAssist HR Pre-Onboarding
+import { AMMO_PREREAD_URL, FIELDASSIST_LINKS } from './_links.js';
 
 export function extractFirstName(fullName) {
   if (!fullName) return 'Team Member';
@@ -48,13 +49,14 @@ export function getFullEmailContent(stageKey, candidate, origin = 'https://field
     : (candidate.officeAddress || 'Plot No. 12, Sector 44, Gurugram, Haryana 122003');
   const dressCode = candidate.dressCode || 'Smart Casuals';
 
-  const ammoPrereadUrl = 'https://ammo.fieldassist.io';
-  const linkedinUrl = 'https://www.linkedin.com/company/fieldassist';
-  const instagramUrl = 'https://www.instagram.com/fieldassist';
-  const newsletterUrl = 'https://fieldassist.com/newsletter';
-  const pathfinderVideoUrl = 'https://www.youtube.com/@FieldAssist';
-  const ambitionBoxUrl = 'https://www.ambitionbox.com/reviews/fieldassist-reviews';
-  const glassdoorUrl = 'https://www.glassdoor.co.in/Reviews/FieldAssist-Reviews-E1430006.htm';
+  const ammoPrereadUrl = AMMO_PREREAD_URL;
+  const goaHighlightsUrl = FIELDASSIST_LINKS.goaHighlights || FIELDASSIST_LINKS.linkedin;
+  const linkedinUrl = FIELDASSIST_LINKS.linkedin;
+  const instagramUrl = FIELDASSIST_LINKS.instagram;
+  const newsletterUrl = FIELDASSIST_LINKS.newsletter;
+  const pathfinderVideoUrl = FIELDASSIST_LINKS.youtube;
+  const ambitionBoxUrl = FIELDASSIST_LINKS.ambitionBox;
+  const glassdoorUrl = FIELDASSIST_LINKS.glassdoor;
 
   let subject = '';
   let bodyText = '';
@@ -132,6 +134,11 @@ ${FOOTER_TEXT}`;
 </div>`;
   } else if (stageKey === 'welcome_7d') {
     subject = 'Welcome to FieldAssist – Your Onboarding Journey Starts Here!';
+    const ammoPrereadText = ammoPrereadUrl ? ammoPrereadUrl : '[TODO: Missing link (ammoPreread)]';
+    const ammoPrereadHtml = ammoPrereadUrl
+      ? `<a href="${ammoPrereadUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; text-decoration: underline;">AMMO Pre-Read Guide</a>`
+      : `AMMO Pre-Read Guide <span style="background-color: #fee2e2; color: #dc2626; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; border: 1px solid #f87171;">TODO: Missing link (ammoPreread)</span>`;
+
     bodyText = `Hi ${firstName},
 
 Congratulations once again—and a warm welcome to FieldAssist!
@@ -141,7 +148,7 @@ We’re thrilled to have you as part of our growing team. Your journey with us i
 Over the next few days, we’ll be sharing important resources and information to help you prepare for your joining.
 
 For now, here’s what you can expect:
-• Access to our AMMO pre-read, to help you get familiar with FieldAssist: ${ammoPrereadUrl}
+• Access to our AMMO pre-read, to help you get familiar with FieldAssist: ${ammoPrereadText}
 • Candidate Pre-Onboarding Portal: ${portalUrl} (Access Code: ${accessCode})
 
 In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
@@ -167,7 +174,7 @@ ${FOOTER_TEXT}`;
     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
       <p style="font-weight: bold; margin: 0 0 8px 0; color: #1e1b4b;">Here’s what you can explore today:</p>
       <ul style="padding-left: 20px; margin: 0 0 16px 0;">
-        <li style="margin-bottom: 6px;">Access our <a href="${ammoPrereadUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; text-decoration: underline;">AMMO Pre-Read Guide</a> to get familiar with FieldAssist, our story, and our product impact.</li>
+        <li style="margin-bottom: 6px;">Access our ${ammoPrereadHtml} to get familiar with FieldAssist, our story, and our product impact.</li>
       </ul>
       <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
         <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">Open Your Candidate Portal &rarr;</a>
@@ -200,7 +207,7 @@ Culture in Motion: Our Goa Offsite:
 Earlier this year, we brought the entire company to Goa, not just for fun, but for alignment, celebration, and forward thinking.
 From powerful strategy sessions to sunset vibes, it was the perfect mix of ambition and culture.
 
-See the Highlights: ${linkedinUrl}
+See the Highlights: ${goaHighlightsUrl}
 (Yes, that energy is real. Yes, you’ll love it here.)
 
 • Check your Onboarding Checklist: ${portalUrl} (Access Code: ${accessCode})
@@ -235,7 +242,7 @@ ${FOOTER_TEXT}`;
       <h3 style="color: #312e81; margin: 0 0 8px 0; font-size: 15px;">Culture in Motion: Our Goa Offsite</h3>
       <p style="font-size: 14px; margin: 0 0 12px 0;">Earlier this year, we brought the entire company to Goa, not just for fun, but for alignment, celebration, and forward thinking. From powerful strategy sessions to sunset vibes, it was the perfect mix of ambition and culture.</p>
       <p style="margin: 0 0 10px 0;">
-        <a href="${linkedinUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">See the Highlights &rarr;</a>
+        <a href="${goaHighlightsUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">See the Highlights &rarr;</a>
       </p>
       <p style="font-style: italic; color: #64748b; font-size: 12px; margin: 0;">(Yes, that energy is real. Yes, you’ll love it here.)</p>
     </div>

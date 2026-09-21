@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { Candidate } from '../types';
+import { Candidate, EmailTemplateDoc, LinksSettingsDoc } from '../types';
 
 // Initialize Firebase App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -91,3 +91,70 @@ export async function deleteCandidateFromFirestore(candidateId: string): Promise
     console.error('Error deleting candidate from Firestore:', err);
   }
 }
+
+/**
+ * Fetch links dictionary from settings/links in Firestore
+ */
+export async function fetchLinksFromFirestore(): Promise<LinksSettingsDoc | null> {
+  try {
+    const linkDocRef = doc(db, 'settings', 'links');
+    const snap = await getDoc(linkDocRef);
+    if (snap.exists()) {
+      return snap.data() as LinksSettingsDoc;
+    }
+    return null;
+  } catch (err) {
+    console.error('Error fetching settings/links from Firestore:', err);
+    return null;
+  }
+}
+
+/**
+ * Save links dictionary to settings/links in Firestore
+ */
+export async function saveLinksToFirestore(links: LinksSettingsDoc): Promise<void> {
+  try {
+    const linkDocRef = doc(db, 'settings', 'links');
+    await setDoc(linkDocRef, links, { merge: true });
+  } catch (err) {
+    console.error('Error saving settings/links to Firestore:', err);
+    throw err;
+  }
+}
+
+/**
+ * Fetch all email templates from emailTemplates collection in Firestore
+ */
+export async function fetchEmailTemplatesFromFirestore(): Promise<Record<string, EmailTemplateDoc> | null> {
+  try {
+    const snap = await getDocs(collection(db, 'emailTemplates'));
+    if (snap.empty) return null;
+    const result: Record<string, EmailTemplateDoc> = {};
+    snap.forEach(docSnap => {
+      const data = docSnap.data() as EmailTemplateDoc;
+      result[docSnap.id] = { ...data, id: docSnap.id };
+    });
+    return result;
+  } catch (err) {
+    console.error('Error fetching emailTemplates from Firestore:', err);
+    return null;
+  }
+}
+
+/**
+ * Save single email template to emailTemplates collection in Firestore
+ */
+export async function saveEmailTemplateToFirestore(stageKey: string, template: EmailTemplateDoc): Promise<void> {
+  try {
+    const templateRef = doc(db, 'emailTemplates', stageKey);
+    await setDoc(templateRef, {
+      ...template,
+      id: stageKey,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    console.error(`Error saving email template ${stageKey} to Firestore:`, err);
+    throw err;
+  }
+}
+

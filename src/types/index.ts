@@ -136,6 +136,30 @@ export type EmailStageKey = 'account_ready' | 'welcome_7d' | 'culture_5d' | 'com
 
 export type EmailDeliveryStatus = 'Pending' | 'Sent' | 'Failed';
 
+export interface EmailBulletItem {
+  text: string;
+  linkLabel?: string;
+  linkKey?: string;
+}
+
+export type EmailBlock =
+  | { type: 'paragraph'; text: string }
+  | { type: 'heading'; text: string }
+  | { type: 'bullets'; items: EmailBulletItem[] }
+  | { type: 'button'; label: string; linkKey: string }
+  | { type: 'note'; text: string };
+
+export interface EmailTemplateDoc {
+  id: string; // stageKey, e.g. 'welcome_7d'
+  subject: string;
+  greeting: string;
+  blocks: EmailBlock[];
+  signoff: string;
+  updatedAt?: string;
+}
+
+export type LinksSettingsDoc = Record<string, string>;
+
 export interface EmailStageLog {
   id: string;
   stageKey: EmailStageKey;

@@ -23,6 +23,28 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "name", "email"]
+    },
+    "emailTemplates": {
+      "title": "Email Templates",
+      "description": "Customizable pre-onboarding email templates per stage",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subject": { "type": "string" },
+        "greeting": { "type": "string" },
+        "blocks": { "type": "array" },
+        "signoff": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "subject", "greeting", "blocks", "signoff"]
+    },
+    "settings": {
+      "title": "Application Settings",
+      "description": "Global settings such as resource links",
+      "type": "object",
+      "properties": {
+        "links": { "type": "object" }
+      }
     }
   }
 }

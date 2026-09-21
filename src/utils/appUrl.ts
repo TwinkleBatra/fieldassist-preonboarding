@@ -1,4 +1,7 @@
-export const PRODUCTION_APP_URL = 'https://fieldassist-preonboarding.vercel.app';
+export const PRODUCTION_APP_URL =
+  (typeof process !== 'undefined' && process.env?.APP_URL) ||
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_APP_URL) ||
+  'https://fieldassist-preonboarding.vercel.app';
 
 /**
  * Returns the effective base URL for candidate links.
