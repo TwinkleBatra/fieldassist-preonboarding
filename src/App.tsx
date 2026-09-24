@@ -18,6 +18,8 @@ import { HRAuthModal } from './components/hr/HRAuthModal';
 import { PostOnboardingTransitionView } from './components/candidate/PostOnboardingTransitionView';
 import { getCandidateAccessInfo } from './utils/dateUtils';
 import { getHRBPForDepartment } from './utils/hrbp';
+import { auth, signOut, onAuthStateChanged, User as FirebaseUser } from './lib/firebase';
+import { isApprovedHREmail } from './utils/hrAuth';
 
 import {
   getCandidates,
@@ -50,8 +52,13 @@ export default function App() {
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   
   // Auth & Access States
-  const [isCandidateLoggedIn, setIsCandidateLoggedIn] = useState<boolean>(true);
-  const [isHRAuthenticated, setIsHRAuthenticated] = useState<boolean>(true);
+  const [isCandidateLoggedIn, setIsCandidateLoggedIn] = useState<boolean>(false);
+  const [isHRAuthenticated, setIsHRAuthenticated] = useState<boolean>(() => {
+    const user = auth.currentUser;
+    return Boolean(user && user.email && isApprovedHREmail(user.email));
+  });
+  const [hrUser, setHrUser] = useState<FirebaseUser | null>(() => auth.currentUser);
+  const [firestoreError, setFirestoreError] = useState<string | null>(null);
 
   // Active Candidate Portal Tab
   const [candidateTab, setCandidateTab] = useState<'overview' | 'form' | 'tracker' | 'faqs'>('overview');
@@ -68,6 +75,49 @@ export default function App() {
   const [inspectCandidate, setInspectCandidate] = useState<Candidate | null>(null);
   const [candidateToEdit, setCandidateToEdit] = useState<Candidate | null>(null);
   const [unmatchedUrlCode, setUnmatchedUrlCode] = useState<string>('');
+
+  // Listen to Firebase Auth state for authorized HR users
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.email && isApprovedHREmail(user.email)) {
+        setHrUser(user);
+        setIsHRAuthenticated(true);
+        sessionStorage.setItem('fa_hr_auth', 'true');
+      } else {
+        setHrUser(null);
+        setIsHRAuthenticated(false);
+        sessionStorage.removeItem('fa_hr_auth');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Synchronize route with URL path
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const pathname = window.location.pathname;
+      const urlParams = new URLSearchParams(window.location.search);
+      const isHr = pathname === '/hr' || pathname.startsWith('/hr') || urlParams.get('view') === 'hr';
+
+      if (isHr) {
+        setActiveView('hr');
+        const currentUser = auth.currentUser;
+        const isAuth = Boolean(currentUser && currentUser.email && isApprovedHREmail(currentUser.email));
+        setIsHRAuthenticated(isAuth);
+        if (!isAuth) {
+          setIsHRAuthModalOpen(true);
+        }
+      } else {
+        setActiveView('candidate');
+        setIsHRAuthModalOpen(false);
+      }
+    };
+
+    handleLocationChange();
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
 
   // Load initial data from storage and check URL parameters for candidate auto-login
   useEffect(() => {
@@ -89,13 +139,8 @@ export default function App() {
     // Parse URL query parameter (e.g. ?accessCode=FA-1001 or ?code=FA-1002)
     const urlParams = new URLSearchParams(window.location.search);
     const codeParam = urlParams.get('accessCode') || urlParams.get('code') || urlParams.get('email');
-
-    // Check for explicit view param
-    const viewParam = urlParams.get('view');
-    if (viewParam === 'hr') {
-      setActiveView('hr');
-      setIsHRAuthenticated(true);
-    }
+    const pathname = window.location.pathname;
+    const isHrRoute = pathname === '/hr' || pathname.startsWith('/hr') || urlParams.get('view') === 'hr';
 
     if (codeParam) {
       const q = codeParam.trim().toLowerCase();
@@ -109,16 +154,19 @@ export default function App() {
         setActiveCandidateIdState(matched.id);
         setActiveCandidateId(matched.id);
         setIsCandidateLoggedIn(true);
+        setIsCandidateLoginModalOpen(false);
         setActiveView('candidate');
       } else {
-        // Code param was provided but not found in current dataset
+        // Code param was provided but not found in current local dataset
         setUnmatchedUrlCode(codeParam);
         setIsCandidateLoggedIn(false);
-        setIsCandidateLoginModalOpen(true);
+        if (!isHrRoute) {
+          setIsCandidateLoginModalOpen(true);
+        }
       }
     } else {
-      // No code in URL: if on candidate view, do NOT auto-login as any candidate
-      if (viewParam !== 'hr') {
+      // Root URL shows ONLY candidate portal login if not already logged in
+      if (!isHrRoute) {
         setIsCandidateLoggedIn(false);
         setIsCandidateLoginModalOpen(true);
       }
@@ -174,10 +222,50 @@ export default function App() {
     setIsCandidateLoginModalOpen(true);
   };
 
-  const handleHRAuthSuccess = () => {
+  const handleHRAuthSuccess = (user?: FirebaseUser) => {
+    if (user) {
+      setHrUser(user);
+    }
+    sessionStorage.setItem('fa_hr_auth', 'true');
     setIsHRAuthenticated(true);
     setIsHRAuthModalOpen(false);
     setActiveView('hr');
+
+    // Fetch full candidates collection from Firestore with authorized HR credentials
+    syncCandidatesWithFirestore().then(synced => {
+      if (synced && synced.length > 0) {
+        setCandidates(synced);
+      }
+    }).catch(err => {
+      console.warn('Sync candidates on HR auth notice:', err);
+    });
+  };
+
+  const handleHRAuthClose = () => {
+    setIsHRAuthModalOpen(false);
+    if (!isHRAuthenticated) {
+      // Redirect back to root candidate portal if HR auth closed without unlocking
+      window.history.pushState({}, '', '/');
+      setActiveView('candidate');
+      if (!isCandidateLoggedIn) {
+        setIsCandidateLoginModalOpen(true);
+      }
+    }
+  };
+
+  const handleExitHR = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('Firebase sign-out notice:', err);
+    }
+    sessionStorage.removeItem('fa_hr_auth');
+    setIsHRAuthenticated(false);
+    setHrUser(null);
+    window.history.pushState({}, '', '/');
+    setActiveView('candidate');
+    setIsCandidateLoggedIn(false);
+    setIsCandidateLoginModalOpen(true);
   };
 
   const handleSaveForm = (formData: Partial<CandidateFormData>, isSubmit: boolean) => {
@@ -228,24 +316,30 @@ export default function App() {
   };
 
   const handleAddCandidate = async (candData: Omit<Candidate, 'id' | 'formData' | 'documents' | 'milestones' | 'schedule'>) => {
-    const created = addCandidate(candData);
-    setCandidates(getCandidates());
-    setNewlyAddedCandidate(created);
-
-    // The moment HR adds a new candidate and clicks Save/Submit, immediately send "Your FieldAssist Account is Ready" email
     try {
-      await dispatchCandidateEmail(created.id, 'account_ready', {
-        forceResend: true,
-        triggeredBy: 'hr_manual'
-      });
-      const updatedList = getCandidates();
-      setCandidates(updatedList);
-      const updatedCreated = updatedList.find(c => c.id === created.id);
-      if (updatedCreated) {
-        setNewlyAddedCandidate(updatedCreated);
+      setFirestoreError(null);
+      const created = await addCandidate(candData);
+      setCandidates(getCandidates());
+      setNewlyAddedCandidate(created);
+
+      // The moment HR adds a new candidate and clicks Save/Submit, immediately send "Your FieldAssist Account is Ready" email
+      try {
+        await dispatchCandidateEmail(created.id, 'account_ready', {
+          forceResend: true,
+          triggeredBy: 'hr_manual'
+        });
+        const updatedList = getCandidates();
+        setCandidates(updatedList);
+        const updatedCreated = updatedList.find(c => c.id === created.id);
+        if (updatedCreated) {
+          setNewlyAddedCandidate(updatedCreated);
+        }
+      } catch (err) {
+        console.warn('Immediate credential email dispatch notice:', err);
       }
-    } catch (err) {
-      console.warn('Immediate credential email dispatch notice:', err);
+    } catch (err: any) {
+      console.error('Failed to save candidate to Firestore:', err);
+      setFirestoreError(`Failed to save candidate to Firestore: ${err?.message || 'Database write error'}. Please verify your Firestore connection.`);
     }
   };
 
@@ -367,15 +461,15 @@ export default function App() {
       {/* Top Header */}
       <Header
         activeView={activeView}
-        setActiveView={setActiveView}
         candidates={candidates}
         activeCandidateId={activeCandidateId}
         onSelectCandidate={handleSelectCandidate}
         isCandidateLoggedIn={isCandidateLoggedIn}
         onLogoutCandidate={handleCandidateLogout}
         onOpenCandidateLogin={() => setIsCandidateLoginModalOpen(true)}
-        onOpenHRAuth={() => setIsHRAuthModalOpen(true)}
         isHRAuthenticated={isHRAuthenticated}
+        onLogoutHR={handleExitHR}
+        hrEmail={hrUser?.email || undefined}
       />
 
       {/* Main Container */}
@@ -391,7 +485,6 @@ export default function App() {
               <PostOnboardingTransitionView
                 candidate={activeCandidate}
                 onLogout={handleCandidateLogout}
-                onSwitchToHR={() => setActiveView('hr')}
               />
             );
           }
@@ -507,6 +600,8 @@ export default function App() {
           <HRDashboard
             candidates={candidates}
             locations={locations}
+            firestoreError={firestoreError}
+            onClearFirestoreError={() => setFirestoreError(null)}
             onSelectCandidateToInspect={setInspectCandidate}
             onOpenAddModal={() => setIsAddCandidateOpen(true)}
             onOpenLocationManager={() => setIsLocationManagerOpen(true)}
@@ -528,17 +623,13 @@ export default function App() {
       <CandidateLoginModal
         isOpen={isCandidateLoginModalOpen}
         onLogin={handleCandidateLogin}
-        onSwitchToHR={() => {
-          setIsCandidateLoginModalOpen(false);
-          setIsHRAuthModalOpen(true);
-        }}
         candidates={candidates}
         initialCode={unmatchedUrlCode}
       />
 
       <HRAuthModal
         isOpen={isHRAuthModalOpen}
-        onClose={() => setIsHRAuthModalOpen(false)}
+        onClose={handleHRAuthClose}
         onSuccess={handleHRAuthSuccess}
       />
 

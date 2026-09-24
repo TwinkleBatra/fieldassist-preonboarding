@@ -7,13 +7,11 @@ import { toTitleCase } from '../../utils/textUtils';
 interface PostOnboardingTransitionViewProps {
   candidate: Candidate;
   onLogout: () => void;
-  onSwitchToHR?: () => void;
 }
 
 export const PostOnboardingTransitionView: React.FC<PostOnboardingTransitionViewProps> = ({
   candidate,
-  onLogout,
-  onSwitchToHR
+  onLogout
 }) => {
   const formattedJoiningDate = formatJoiningDate(candidate.joiningDate);
   const hrbpEmail = candidate.hrbp?.email || 'twinkle.verma@flick2know.com';
@@ -116,17 +114,6 @@ export const PostOnboardingTransitionView: React.FC<PostOnboardingTransitionView
             </a>
 
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              {onSwitchToHR && (
-                <button
-                  type="button"
-                  onClick={onSwitchToHR}
-                  className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4 text-purple-700" />
-                  <span>HR Dashboard</span>
-                </button>
-              )}
-
               <button
                 type="button"
                 onClick={onLogout}

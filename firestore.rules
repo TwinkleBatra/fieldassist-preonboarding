@@ -1,8 +1,59 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isHR() {
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        request.auth.token.email_verified == true &&
+        (
+          request.auth.token.email.matches('.*@flick2know[.]com$') ||
+          request.auth.token.email.matches('.*@fieldassist[.](in|com)$') ||
+          request.auth.token.email == 'twinkle.verma@flick2know.com' ||
+          request.auth.token.email == 'megha.r@fieldassist.in' ||
+          request.auth.token.email == 'anand.k@fieldassist.in' ||
+          request.auth.token.email == 'pooja.k@fieldassist.in'
+        );
+    }
+
+    match /candidates/{candidateId} {
+      allow create: if isHR();
+      allow delete: if isHR();
+
+      allow get: if isHR() || (request.auth == null && resource.data.accessCode != null);
+
+      allow list: if isHR() || (
+        request.auth == null &&
+        request.query.limit <= 1 &&
+        (resource.data.accessCode != null || resource.data.email != null)
+      );
+
+      allow update: if isHR() || (
+        request.auth == null &&
+        request.resource.data.accessCode == resource.data.accessCode &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.joiningDate == resource.data.joiningDate &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'formData', 'documents', 'milestones', 'formStatus',
+          'avatarUrl', 'photoDocUrl', 'updatedAt', 'resumeUrl', 'resumeFileName',
+          'resumeUploadedAt', 'offerLetterUrl', 'offerLetterFileName', 'offerLetterUploadedAt'
+        ])
+      );
+    }
+
+    match /emailTemplates/{templateId} {
+      allow read: if true;
+      allow write: if isHR();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isHR();
+    }
+
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

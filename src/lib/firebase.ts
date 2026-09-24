@@ -1,5 +1,24 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  collection, 
+  getDocs, 
+  deleteDoc,
+  query,
+  where,
+  limit
+} from 'firebase/firestore';
+import { 
+  getAuth, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  GoogleAuthProvider,
+  User 
+} from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Candidate, EmailTemplateDoc, LinksSettingsDoc } from '../types';
@@ -12,6 +31,14 @@ const customDbId = (firebaseConfig as any).firestoreDatabaseId;
 export const db = customDbId && customDbId !== '(default)'
   ? getFirestore(app, customDbId)
   : getFirestore(app);
+
+// Initialize Firebase Auth
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+export { signInWithPopup, signOut, onAuthStateChanged, type User };
 
 // Initialize Firebase Storage
 export const storage = getStorage(app);
@@ -48,18 +75,91 @@ export async function uploadDocumentToFirebaseStorage(
 }
 
 /**
+ * Recursively removes undefined values from an object or array so Firestore setDoc does not throw
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as any;
+  }
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForFirestore(item)) as any;
+  }
+  if (typeof data === 'object' && !(data instanceof Date)) {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        cleaned[key] = sanitizeForFirestore(value);
+      }
+    }
+    return cleaned as any;
+  }
+  return data;
+}
+
+/**
  * Save or update full candidate record in Firestore
  */
 export async function saveCandidateToFirestore(candidate: Candidate): Promise<void> {
   try {
     const candidateRef = doc(db, 'candidates', candidate.id);
-    await setDoc(candidateRef, {
+    const sanitizedCandidate = sanitizeForFirestore({
       ...candidate,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    });
+    await setDoc(candidateRef, sanitizedCandidate, { merge: true });
   } catch (err) {
     console.error('Error saving candidate to Firestore:', err);
+    throw err;
   }
+}
+
+/**
+ * Direct lookup in Firestore collection candidates by accessCode or email
+ * Handles trimming and case-insensitive matching
+ */
+export async function lookupCandidateInFirestore(queryStr: string): Promise<Candidate | null> {
+  const rawQ = (queryStr || '').trim();
+  if (!rawQ) return null;
+
+  // 1. Direct getDoc if the input matches candidate document ID
+  try {
+    const docRef = doc(db, 'candidates', rawQ);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as Candidate;
+    }
+  } catch {
+    // Ignore and proceed to accessCode query
+  }
+
+  // 2. Query by accessCode with limit(1) (supports exact, uppercase, or lowercase codes)
+  const candidateCollection = collection(db, 'candidates');
+  const codesToTry = Array.from(new Set([rawQ.toUpperCase(), rawQ, rawQ.toLowerCase()]));
+
+  for (const code of codesToTry) {
+    try {
+      const q = query(candidateCollection, where('accessCode', '==', code), limit(1));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        return snapshot.docs[0].data() as Candidate;
+      }
+    } catch {
+      // Continue trying alternatives
+    }
+  }
+
+  // 3. Query by registered email with limit(1)
+  try {
+    const qEmail = query(candidateCollection, where('email', '==', rawQ.toLowerCase()), limit(1));
+    const snap = await getDocs(qEmail);
+    if (!snap.empty) {
+      return snap.docs[0].data() as Candidate;
+    }
+  } catch {
+    // Fallback
+  }
+
+  return null;
 }
 
 /**

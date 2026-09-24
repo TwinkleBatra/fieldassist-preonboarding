@@ -79,10 +79,49 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
   return { candidate, updated: false };
 };
 
+export const checkAndAutoMarkJoined = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
+  if (candidate.status === 'Joined' || candidate.status === 'Onboarding Complete') {
+    return { candidate, updated: false };
+  }
+  const statusStr = (candidate.status as string || '').toLowerCase();
+  if (statusStr.includes('cancel') || statusStr.includes('reject')) {
+    return { candidate, updated: false };
+  }
+
+  if (candidate.joiningDate) {
+    const today = new Date().toISOString().split('T')[0];
+    if (candidate.joiningDate <= today) {
+      return {
+        candidate: {
+          ...candidate,
+          status: 'Joined'
+        },
+        updated: true
+      };
+    }
+  }
+
+  return { candidate, updated: false };
+};
+
+/**
+ * Generates a random 8-character alphanumeric access code in format FA-XXXXXXXX
+ * Uses uppercase letters and digits, excluding look-alikes like 0/O and 1/I
+ */
+export const generateAccessCode = (): string => {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    code += chars[randomIndex];
+  }
+  return `FA-${code}`;
+};
+
 export const ensureAccessCode = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
   if (candidate.accessCode) return { candidate, updated: false };
 
-  const code = `FA-${Math.floor(1000 + Math.random() * 9000)}`;
+  const code = generateAccessCode();
   return {
     candidate: { ...candidate, accessCode: code },
     updated: true
@@ -369,16 +408,17 @@ export const getCandidates = (): Candidate[] => {
 
     const enriched = enrichCandidateWithLocation(currentCand, locations);
     const { candidate: dateUpdatedCand, updated: dateUpdated } = ensureUpcomingJoiningDate(enriched);
-    const { candidate: codeUpdatedCand, updated: codeUpdated } = ensureAccessCode(dateUpdatedCand);
+    const { candidate: joinedCand, updated: joinedUpdated } = checkAndAutoMarkJoined(dateUpdatedCand);
+    const { candidate: codeUpdatedCand, updated: codeUpdated } = ensureAccessCode(joinedCand);
     const { candidate: scheduleUpdatedCand, updated: schedUpdated } = ensureLatestSchedule(codeUpdatedCand);
     const { candidate: autoUpdatedCand, updated: autoUpdated } = ensureEmailAutomationState(scheduleUpdatedCand);
-    if (dateUpdated || codeUpdated || schedUpdated || autoUpdated) needsSave = true;
+    if (dateUpdated || joinedUpdated || codeUpdated || schedUpdated || autoUpdated) needsSave = true;
     return autoUpdatedCand;
   });
 
   if (needsSave) {
     localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(processed));
-    processed.forEach(c => saveCandidateToFirestore(c));
+    processed.forEach(c => saveCandidateToFirestore(c).catch(err => console.warn('Background firestore sync notice:', err)));
   }
 
   return processed;
@@ -386,18 +426,18 @@ export const getCandidates = (): Candidate[] => {
 
 export const getCandidateById = (id: string): Candidate | undefined => {
   const candidates = getCandidates();
-  return candidates.find(c => c.id === id);
+  return candidates.find(c => (c.id || '').trim() === (id || '').trim());
 };
 
 export const getCandidateByAccessCodeOrEmail = (query: string): Candidate | undefined => {
   const candidates = getCandidates();
-  const q = query.trim().toLowerCase();
+  const q = (query || '').trim().toLowerCase();
   if (!q) return undefined;
 
   return candidates.find(c => 
-    c.email.toLowerCase() === q || 
-    (c.accessCode && c.accessCode.toLowerCase() === q) ||
-    c.id.toLowerCase() === q
+    (c.email || '').trim().toLowerCase() === q || 
+    ((c.accessCode || '').trim().toLowerCase() === q) ||
+    ((c.id || '').trim().toLowerCase() === q)
   );
 };
 
@@ -410,7 +450,7 @@ export const setActiveCandidateId = (id: string): void => {
   localStorage.setItem(STORAGE_KEYS.ACTIVE_CANDIDATE_ID, id);
 };
 
-export const saveCandidate = (candidate: Candidate, skipGoogleSheetsSync = false): void => {
+export const saveCandidate = async (candidate: Candidate, skipGoogleSheetsSync = false): Promise<void> => {
   const candidates = getCandidates();
   const index = candidates.findIndex(c => c.id === candidate.id);
   
@@ -421,7 +461,13 @@ export const saveCandidate = (candidate: Candidate, skipGoogleSheetsSync = false
   }
   
   localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(candidates));
-  saveCandidateToFirestore(candidate);
+  
+  try {
+    await saveCandidateToFirestore(candidate);
+  } catch (err) {
+    console.error('[saveCandidate] Firestore persist failed:', err);
+    throw err;
+  }
 
   // Background Google Sheets Synchronization only if not explicitly skipped
   if (!skipGoogleSheetsSync) {
@@ -462,21 +508,22 @@ export const syncCandidatesWithFirestore = async (): Promise<Candidate[]> => {
     let needsRemoteUpdate = false;
     const processed = remoteCandidates.map(c => {
       const enriched = enrichCandidateWithLocation(c, locations);
-      const { candidate: schedCand, updated: schedUpdated } = ensureLatestSchedule(enriched);
+      const { candidate: joinedCand, updated: joinedUpdated } = checkAndAutoMarkJoined(enriched);
+      const { candidate: schedCand, updated: schedUpdated } = ensureLatestSchedule(joinedCand);
       const { candidate: autoCand, updated: autoUpdated } = ensureEmailAutomationState(schedCand);
-      if (schedUpdated || autoUpdated) needsRemoteUpdate = true;
+      if (joinedUpdated || schedUpdated || autoUpdated) needsRemoteUpdate = true;
       return autoCand;
     });
 
     localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(processed));
     if (needsRemoteUpdate) {
-      processed.forEach(c => saveCandidateToFirestore(c));
+      processed.forEach(c => saveCandidateToFirestore(c).catch(err => console.warn('Background sync update notice:', err)));
     }
     return processed;
   }
   // If remote is empty, populate remote with current local candidates
   const current = getCandidates();
-  current.forEach(c => saveCandidateToFirestore(c));
+  current.forEach(c => saveCandidateToFirestore(c).catch(err => console.warn('Initial populate firestore notice:', err)));
   return current;
 };
 
@@ -702,9 +749,10 @@ export const updateDocumentStatus = (
   return updatedCandidate;
 };
 
-export const addCandidate = (newCandidateData: Omit<Candidate, 'id' | 'formData' | 'documents' | 'milestones' | 'schedule'>): Candidate => {
+export const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'formData' | 'documents' | 'milestones' | 'schedule'>): Promise<Candidate> => {
   const id = `cand-${Date.now()}`;
-  const accessCode = newCandidateData.accessCode || `FA-${Math.floor(1000 + Math.random() * 9000)}`;
+  const rawCode = newCandidateData.accessCode || generateAccessCode();
+  const accessCode = rawCode.trim();
   const locations = getLocations();
   
   const isRemote = newCandidateData.workMode === 'Remote';
@@ -783,7 +831,7 @@ export const addCandidate = (newCandidateData: Omit<Candidate, 'id' | 'formData'
   };
 
   const { candidate: withAutomation } = ensureEmailAutomationState(fullCandidate);
-  saveCandidate(withAutomation);
+  await saveCandidate(withAutomation);
   return withAutomation;
 };
 

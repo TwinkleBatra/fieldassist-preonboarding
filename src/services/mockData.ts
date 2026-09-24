@@ -231,8 +231,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     schedule: DEFAULT_FIELDASSIST_SCHEDULE
   },
   {
-    id: 'cand-karan-1270',
-    accessCode: 'FA-1270',
+    id: 'cand-karan',
     name: 'Karan',
     email: 'karanbatra.kb96@gmail.com',
     phone: '',
@@ -307,8 +306,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     schedule: DEFAULT_FIELDASSIST_SCHEDULE
   },
   {
-    id: 'cand-kavya-9074',
-    accessCode: 'FA-9074',
+    id: 'cand-kavya',
     name: 'Kavya Seth',
     email: 'kavya@fieldassist.in',
     phone: '',
@@ -383,8 +381,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     schedule: DEFAULT_FIELDASSIST_SCHEDULE
   },
   {
-    id: 'cand-nimisha-6829',
-    accessCode: 'FA-6829',
+    id: 'cand-nimisha',
     name: 'Nimisha',
     email: 'Nimi@01flick2know.com',
     phone: '',

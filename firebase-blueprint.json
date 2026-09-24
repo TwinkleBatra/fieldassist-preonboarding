@@ -46,5 +46,19 @@
         "links": { "type": "object" }
       }
     }
+  },
+  "firestore": {
+    "/candidates/{candidateId}": {
+      "schema": "candidates",
+      "description": "Candidates undergoing pre-onboarding, managed by HR"
+    },
+    "/emailTemplates/{templateId}": {
+      "schema": "emailTemplates",
+      "description": "Stage-wise customizable email templates"
+    },
+    "/settings/{settingId}": {
+      "schema": "settings",
+      "description": "Global settings and resource links"
+    }
   }
 }

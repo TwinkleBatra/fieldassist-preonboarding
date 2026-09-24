@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, UserCheck, Key, ArrowRight, ShieldCheck, Sparkles, CheckCircle, Mail } from 'lucide-react';
+import { Lock, Key, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
-import { CandidateAvatar } from '../CandidateAvatar';
-import { toTitleCase } from '../../utils/textUtils';
+import { lookupCandidateInFirestore } from '../../lib/firebase';
+import { saveCandidate } from '../../services/candidateStorage';
 
 interface CandidateLoginModalProps {
   isOpen: boolean;
   onLogin: (candidate: Candidate) => void;
-  onSwitchToHR: () => void;
   candidates: Candidate[];
   initialCode?: string;
 }
@@ -15,25 +14,25 @@ interface CandidateLoginModalProps {
 export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
   isOpen,
   onLogin,
-  onSwitchToHR,
   candidates,
   initialCode
 }) => {
   const [accessInput, setAccessInput] = useState(initialCode || '');
   const [errorMsg, setErrorMsg] = useState(
-    initialCode ? `Access Code "${initialCode}" was not found in the pre-onboarding database. Please verify or try entering your registered personal email below.` : ''
+    initialCode ? `Access Code "${initialCode}" was not found in the local records. Please verify or try entering your registered personal email below.` : ''
   );
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (initialCode && !accessInput) {
       setAccessInput(initialCode);
-      setErrorMsg(`Access Code "${initialCode}" was not found in the pre-onboarding database. Please verify or try entering your registered personal email below.`);
+      setErrorMsg(`Access Code "${initialCode}" was not found in the local records. Please verify or try entering your registered personal email below.`);
     }
   }, [initialCode]);
 
   if (!isOpen) return null;
 
-  const handleAccessSubmit = (e: React.FormEvent) => {
+  const handleAccessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -43,29 +42,43 @@ export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
       return;
     }
 
-    const matched = candidates.find(c =>
-      c.email.toLowerCase() === query ||
-      (c.accessCode && c.accessCode.toLowerCase() === query) ||
-      c.id.toLowerCase() === query
-    );
+    // 1. Check local state candidates (case-insensitive & trimmed)
+    const localMatch = candidates.find(c => {
+      const cEmail = (c.email || '').trim().toLowerCase();
+      const cCode = (c.accessCode || '').trim().toLowerCase();
+      const cId = (c.id || '').trim().toLowerCase();
+      return cEmail === query || cCode === query || cId === query;
+    });
 
-    if (matched) {
-      onLogin(matched);
-    } else {
-      setErrorMsg('No joiner profile found matching this Email or Access Code. Please check your HR invitation email or use a Demo Login below.');
+    if (localMatch) {
+      onLogin(localMatch);
+      return;
+    }
+
+    // 2. Direct Firestore lookup fallback (querying remote cloud database)
+    setIsLoading(true);
+    try {
+      const remoteCandidate = await lookupCandidateInFirestore(query);
+      if (remoteCandidate) {
+        await saveCandidate(remoteCandidate, true).catch(() => {});
+        onLogin(remoteCandidate);
+        return;
+      }
+
+      setErrorMsg('No joiner profile found matching this Email or Access Code. Please check the credentials in your welcome email or contact your HR team.');
+    } catch (err) {
+      console.error('Candidate login error:', err);
+      setErrorMsg('Unable to verify your access code right now. Please check your network connection or contact HR.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleQuickDemoLogin = (cand: Candidate) => {
-    setAccessInput(cand.accessCode || cand.email);
-    onLogin(cand);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
         
-        {/* Banner */}
+        {/* Friendly Welcome Header */}
         <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-950 p-8 text-white text-center relative overflow-hidden">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
           
@@ -81,13 +94,13 @@ export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
           <h2 className="text-2xl font-black text-white tracking-tight">
             Candidate Access Portal
           </h2>
-          <p className="text-xs text-purple-200 mt-1 max-w-sm mx-auto">
-            Welcome to FieldAssist! Enter your Personal Email or Unique Access Code provided by your HR team to access your personalized joining details.
+          <p className="text-xs text-purple-200 mt-1.5 max-w-xs mx-auto leading-relaxed">
+            Welcome to FieldAssist! Enter your registered Personal Email or Unique Access Code provided in your welcome email to access your onboarding dashboard.
           </p>
         </div>
 
         {/* Login Form */}
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-6 sm:p-8 space-y-5">
           <form onSubmit={handleAccessSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
@@ -98,8 +111,9 @@ export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
                   type="text"
                   value={accessInput}
                   onChange={(e) => setAccessInput(e.target.value)}
-                  placeholder="e.g. rahul.sharma@example.com or FA-1001"
-                  className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600/30 focus:border-purple-600 transition font-medium"
+                  placeholder="e.g. your.email@example.com or FA-XXXXXXXX"
+                  disabled={isLoading}
+                  className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600/30 focus:border-purple-600 transition font-medium disabled:opacity-60"
                   autoFocus
                 />
                 <Key className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
@@ -114,51 +128,22 @@ export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
 
             <button
               type="submit"
-              className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer group"
+              disabled={isLoading}
+              className="w-full bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer group disabled:opacity-60"
             >
-              <span>Access My Pre-Onboarding Portal</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <span>Access My Pre-Onboarding Portal</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
-
-          {/* Demo Profiles */}
-          <div className="pt-4 border-t border-slate-100">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2 text-center">
-              ⚡ Quick Demo Login (Click to Test)
-            </span>
-            <div className="space-y-2">
-              {candidates.slice(0, 3).map((cand) => (
-                <button
-                  key={cand.id}
-                  onClick={() => handleQuickDemoLogin(cand)}
-                  className="w-full text-left p-2.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-purple-50 hover:border-purple-300 transition flex items-center justify-between group cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <CandidateAvatar candidate={cand} size="sm" />
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 group-hover:text-purple-900">{toTitleCase(cand.name)}</p>
-                      <p className="text-[10px] text-slate-500">{cand.role.split('(')[0]} • {cand.officeCity}</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold bg-purple-100 text-purple-800 px-2 py-1 rounded-md border border-purple-200">
-                    {cand.accessCode || 'FA-1001'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* HR Switch */}
-          <div className="pt-2 text-center">
-            <button
-              onClick={onSwitchToHR}
-              className="text-xs text-purple-700 hover:text-purple-900 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Are you an HR Administrator? Open HR Dashboard</span>
-            </button>
-          </div>
-
         </div>
 
       </div>

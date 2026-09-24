@@ -20,6 +20,8 @@ interface HRDashboardProps {
   onCandidateUpdated?: () => void;
   onDeleteCandidate?: (candidateId: string) => void;
   onOpenEditCandidate?: (candidate: Candidate) => void;
+  firestoreError?: string | null;
+  onClearFirestoreError?: () => void;
 }
 
 export const HRDashboard: React.FC<HRDashboardProps> = ({
@@ -32,7 +34,9 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
   onSendReminder,
   onCandidateUpdated,
   onDeleteCandidate,
-  onOpenEditCandidate
+  onOpenEditCandidate,
+  firestoreError,
+  onClearFirestoreError
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -159,8 +163,30 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
     return typeof c.formData?.completionPercentage === 'number' ? c.formData.completionPercentage : 0;
   };
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Helper to determine if candidate has already joined (Date of Joining <= today, excluding cancelled/rejected/inactive)
+  const isJoinedCandidate = (c: Candidate): boolean => {
+    const statusStr = (c.status || '').toLowerCase();
+    if (statusStr.includes('cancel') || statusStr.includes('reject') || statusStr.includes('inactive')) {
+      return false;
+    }
+    if (c.status === 'Joined' || c.status === 'Onboarding Complete') return true;
+    return Boolean(c.joiningDate && c.joiningDate <= todayStr);
+  };
+
+  const isUpcomingCandidate = (c: Candidate): boolean => {
+    const statusStr = (c.status || '').toLowerCase();
+    if (statusStr.includes('cancel') || statusStr.includes('reject') || statusStr.includes('inactive')) {
+      return false;
+    }
+    return !isJoinedCandidate(c);
+  };
+
   // Compute metrics
   const totalCount = candidates.length;
+  const joinedCount = candidates.filter(isJoinedCandidate).length;
+  const upcomingCount = candidates.filter(isUpcomingCandidate).length;
   const completedFormCount = candidates.filter(c => isCandidateFormComplete(c)).length;
   const inProgressFormCount = candidates.filter(c => !isCandidateFormComplete(c) && getCandidateFormPercentage(c) > 0).length;
   const notStartedFormCount = candidates.filter(c => !isCandidateFormComplete(c) && getCandidateFormPercentage(c) === 0).length;
@@ -198,7 +224,12 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
       c.reportingManager.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.hrbp.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'All'
+        ? true
+        : statusFilter === 'Joined'
+        ? isJoinedCandidate(c)
+        : c.status === statusFilter;
     const matchesDept = departmentFilter === 'All' || c.department === departmentFilter;
     
     let matchesLocation = true;
@@ -237,6 +268,20 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
     return matchesSearch && matchesStatus && matchesDept && matchesLocation && matchesForm;
   });
 
+  // Upcoming candidates sorted by nearest Date of Joining first
+  const upcomingCandidates = useMemo(() => {
+    return filteredCandidates
+      .filter(c => !isJoinedCandidate(c))
+      .sort((a, b) => (a.joiningDate || '').localeCompare(b.joiningDate || ''));
+  }, [filteredCandidates, todayStr]);
+
+  // Already joined candidates sorted by joining date
+  const joinedCandidates = useMemo(() => {
+    return filteredCandidates
+      .filter(c => isJoinedCandidate(c))
+      .sort((a, b) => (b.joiningDate || '').localeCompare(a.joiningDate || ''));
+  }, [filteredCandidates, todayStr]);
+
   const handleReminderClick = async (c: Candidate) => {
     const stagesKeys: EmailStageKey[] = ['welcome_7d', 'culture_5d', 'comm_3d', 'day1_1d'];
     const pendingStage = stagesKeys.find(key => !c.emailAutomation?.stages?.[key] || c.emailAutomation?.stages?.[key]?.status !== 'Sent') || 'welcome_7d';
@@ -274,6 +319,22 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       
+      {/* Visible Firestore / HR Error Toast */}
+      {firestoreError && (
+        <div className="bg-rose-950 text-rose-100 text-xs font-bold px-4 py-3.5 rounded-xl shadow-lg flex items-center justify-between transition border border-rose-700 animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+            <div>
+              <span className="font-extrabold text-white block">Firestore Synchronization Notice</span>
+              <span className="text-rose-200 font-normal">{firestoreError}</span>
+            </div>
+          </div>
+          {onClearFirestoreError && (
+            <button onClick={onClearFirestoreError} className="text-rose-300 hover:text-white font-bold cursor-pointer p-1 ml-3">✕</button>
+          )}
+        </div>
+      )}
+
       {/* Toast Alert */}
       {toastMessage && (
         <div className="bg-purple-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg flex items-center justify-between transition border border-purple-700">
@@ -338,12 +399,18 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
           </div>
         </div>
 
-        {/* 4 Overview Metrics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-purple-800/60">
+        {/* 5 Overview Metrics Cards including Joined */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 pt-6 border-t border-purple-800/60">
           <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
             <span className="text-[11px] font-bold text-purple-200 uppercase tracking-wider block">Total Joiners</span>
             <div className="text-2xl sm:text-3xl font-black text-white mt-1">{totalCount}</div>
-            <span className="text-[10px] text-purple-300">Active onboarding</span>
+            <span className="text-[10px] text-purple-300">All registered joiners</span>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
+            <span className="text-[11px] font-bold text-emerald-200 uppercase tracking-wider block">Joined</span>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1">{joinedCount}</div>
+            <span className="text-[10px] text-emerald-200/80">{upcomingCount} upcoming</span>
           </div>
 
           <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
@@ -471,234 +538,431 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {filteredCandidates.length > 0 ? (
-                filteredCandidates.map(candidate => (
-                  <tr key={candidate.id} className="hover:bg-purple-50/30 transition group">
-                    
-                    {/* Candidate Name & Email */}
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <CandidateAvatar candidate={candidate} size="md" />
-                        <div>
-                          <p className="font-bold text-slate-900 group-hover:text-purple-900">{toTitleCase(candidate.name)}</p>
-                          <p className="text-[11px] text-slate-500">{candidate.email}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-mono font-bold bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded border border-purple-200">
-                              {candidate.accessCode || 'FA-1001'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Role & Department */}
-                    <td className="py-4 px-4">
-                      <p className="font-bold text-slate-900">{candidate.role}</p>
-                      <span className="inline-block mt-0.5 text-[10px] font-semibold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
-                        {candidate.department}
-                      </span>
-                    </td>
-
-                    {/* Joining Date & Location / Work Mode */}
-                    <td className="py-4 px-4">
-                      <p className="font-extrabold text-slate-900">
-                        {formatJoiningDate(candidate.joiningDate, { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {candidate.workMode === 'Remote' ? (
-                          <span className="text-[10px] font-extrabold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200">
-                            💻 Remote ({candidate.remoteCity || candidate.officeCity}, {candidate.remoteCountry || candidate.officeCountry})
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-purple-900 font-bold">
-                            🏢 {candidate.officeCity.toLowerCase().includes('gurg') ? 'Gurgaon' : candidate.officeCity.toLowerCase().includes('beng') || candidate.officeCity.toLowerCase().includes('bang') ? 'Bangalore' : candidate.officeCity.toLowerCase().includes('mumbai') ? 'Mumbai' : candidate.officeCity}
-                          </span>
-                        )}
-                      </div>
-                      {candidate.timeZone && (
-                        <p className="text-[10px] text-slate-400 font-medium">{candidate.timeZone}</p>
-                      )}
-                    </td>
-
-                    {/* HRBP */}
-                    <td className="py-4 px-4">
-                      <p className="font-semibold text-slate-900"><strong className="text-slate-400 font-normal">HRBP:</strong> {candidate.hrbp?.name || 'Unassigned'}</p>
-                    </td>
-
-                    {/* Pre-Onboarding Form Status, Percentage & Documents */}
-                    <td className="py-4 px-4 min-w-[170px]">
-                      {(() => {
-                        const isComplete = isCandidateFormComplete(candidate);
-                        const pct = getCandidateFormPercentage(candidate);
-                        const isZero = !isComplete && pct === 0;
-
-                        return (
-                          <div className="space-y-1.5 max-w-[160px]">
-                            <div className="flex items-center justify-between gap-1">
-                              {isComplete ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                                  <span>Completed</span>
-                                </span>
-                              ) : isZero ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
-                                  <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
-                                  <span>Not Started</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs">
-                                  <Clock className="w-3 h-3 text-amber-600 shrink-0" />
-                                  <span>In Progress</span>
-                                </span>
-                              )}
-
-                              <span className={`text-[11px] font-black ${
-                                isComplete ? 'text-emerald-700' : isZero ? 'text-rose-600' : 'text-amber-700'
-                              }`}>
-                                {isComplete ? '100%' : `${pct}%`}
-                              </span>
-                            </div>
-
-                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/70">
-                              <div
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                  isComplete ? 'bg-emerald-600' : isZero ? 'bg-slate-300' : 'bg-amber-500'
-                                }`}
-                                style={{ width: `${isComplete ? 100 : pct}%` }}
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-1 mt-1">
-                              {(() => {
-                                const uploadedDocs = candidate.documents.filter(d => d.status === 'Uploaded' || d.status === 'Verified' || d.fileUrl).length;
-                                const totalDocs = candidate.documents.length || 4;
-                                const totalStagesCount = 4;
-                                const sentEmailsCount = Object.values(candidate.emailAutomation?.stages || {}).filter((s: any) => s?.status === 'Sent').length;
-                                return (
-                                  <>
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
-                                      uploadedDocs >= totalDocs
-                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                        : uploadedDocs > 0
-                                        ? 'bg-purple-100 text-purple-800 border-purple-200'
-                                        : 'bg-rose-50 text-rose-700 border-rose-200'
-                                    }`}>
-                                      {uploadedDocs}/{totalDocs} Docs
-                                    </span>
-
-                                    <button
-                                      onClick={() => onSelectCandidateToInspect(candidate)}
-                                      className={`text-[10px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-0.5 cursor-pointer hover:opacity-80 transition ${
-                                        sentEmailsCount === totalStagesCount
-                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                          : sentEmailsCount > 0
-                                          ? 'bg-purple-100 text-purple-800 border-purple-200'
-                                          : 'bg-amber-50 text-amber-800 border-amber-200'
-                                      }`} title="Click to view & manage pre-onboarding email automation">
-                                      <Mail className="w-2.5 h-2.5" />
-                                      <span>Emails {sentEmailsCount}/{totalStagesCount}</span>
-                                    </button>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </td>
-
-                    {/* Onboarding Status Badge */}
-                    <td className="py-4 px-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
-                        candidate.status === 'Ready for Day 1'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                          : candidate.status === 'Under Review'
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : candidate.status === 'Form Pending'
-                          ? 'bg-purple-100 text-purple-800 border-purple-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}>
-                        {candidate.status}
-                      </span>
-                    </td>
-
-                    {/* Action buttons */}
-                    <td className="py-4 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleCopyAccessLink(candidate)}
-                          className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition border flex items-center gap-1 cursor-pointer ${
-                            copiedCandidateId === candidate.id
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border-indigo-200'
-                          }`}
-                          title="Copy Candidate Access Link"
-                        >
-                          {copiedCandidateId === candidate.id ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              <span className="text-emerald-700">Copied ✓</span>
-                            </>
-                          ) : (
-                            <>
-                              <Link2 className="w-3.5 h-3.5 text-indigo-600" />
-                              <span className="hidden sm:inline">Copy Link</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => onSelectCandidateToInspect(candidate)}
-                          className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-[11px] transition border border-purple-200 flex items-center gap-1 cursor-pointer"
-                          title="Inspect Candidate Details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Inspect</span>
-                        </button>
-
-                        <button
-                          onClick={() => onOpenEditCandidate && onOpenEditCandidate(candidate)}
-                          className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition border border-amber-200 flex items-center gap-1 cursor-pointer shadow-2xs"
-                          title="Edit Candidate Details (Name, Email, Role, Joining Date, Manager, Location, HRBP)"
-                        >
-                          <Pencil className="w-3.5 h-3.5 text-amber-700" />
-                          <span>Edit</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleReminderClick(candidate)}
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition border border-slate-200 cursor-pointer"
-                          title="Send Email Reminder"
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => setCandidateToDelete(candidate)}
-                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-bold text-[11px] transition border border-rose-200 cursor-pointer"
-                          title="Delete Candidate Record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => onSwitchToCandidateView(candidate.id)}
-                          className="p-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[11px] transition cursor-pointer"
-                          title="View Portal as this candidate"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-
-                  </tr>
-                ))
-              ) : (
+              {filteredCandidates.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
                     No joiners found matching filter criteria.
                   </td>
                 </tr>
+              ) : (
+                <>
+                  {/* 1. Upcoming Joiners First (Nearest joining date first, bold name and date) */}
+                  {upcomingCandidates.map(candidate => (
+                    <tr key={candidate.id} className="hover:bg-purple-50/30 transition group">
+                      
+                      {/* Candidate Name & Email */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <CandidateAvatar candidate={candidate} size="md" />
+                          <div>
+                            <p className="font-extrabold text-slate-950 group-hover:text-purple-900 text-[13px]">{toTitleCase(candidate.name)}</p>
+                            <p className="text-[11px] text-slate-500">{candidate.email}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-mono font-bold bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded border border-purple-200">
+                                {candidate.accessCode || 'FA-1001'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Role & Department */}
+                      <td className="py-4 px-4">
+                        <p className="font-bold text-slate-900">{candidate.role}</p>
+                        <span className="inline-block mt-0.5 text-[10px] font-semibold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
+                          {candidate.department}
+                        </span>
+                      </td>
+
+                      {/* Joining Date & Location / Work Mode */}
+                      <td className="py-4 px-4">
+                        <p className="font-black text-slate-950 text-xs">
+                          {formatJoiningDate(candidate.joiningDate, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {candidate.workMode === 'Remote' ? (
+                            <span className="text-[10px] font-extrabold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200">
+                              💻 Remote ({candidate.remoteCity || candidate.officeCity}, {candidate.remoteCountry || candidate.officeCountry})
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-purple-900 font-bold">
+                              🏢 {candidate.officeCity.toLowerCase().includes('gurg') ? 'Gurgaon' : candidate.officeCity.toLowerCase().includes('beng') || candidate.officeCity.toLowerCase().includes('bang') ? 'Bangalore' : candidate.officeCity.toLowerCase().includes('mumbai') ? 'Mumbai' : candidate.officeCity}
+                            </span>
+                          )}
+                        </div>
+                        {candidate.timeZone && (
+                          <p className="text-[10px] text-slate-400 font-medium">{candidate.timeZone}</p>
+                        )}
+                      </td>
+
+                      {/* HRBP */}
+                      <td className="py-4 px-4">
+                        <p className="font-semibold text-slate-900"><strong className="text-slate-400 font-normal">HRBP:</strong> {candidate.hrbp?.name || 'Unassigned'}</p>
+                      </td>
+
+                      {/* Pre-Onboarding Form Status, Percentage & Documents */}
+                      <td className="py-4 px-4 min-w-[170px]">
+                        {(() => {
+                          const isComplete = isCandidateFormComplete(candidate);
+                          const pct = getCandidateFormPercentage(candidate);
+                          const isZero = !isComplete && pct === 0;
+
+                          return (
+                            <div className="space-y-1.5 max-w-[160px]">
+                              <div className="flex items-center justify-between gap-1">
+                                {isComplete ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                    <span>Completed</span>
+                                  </span>
+                                ) : isZero ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
+                                    <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                                    <span>Not Started</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs">
+                                    <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                                    <span>In Progress</span>
+                                  </span>
+                                )}
+
+                                <span className={`text-[11px] font-black ${
+                                  isComplete ? 'text-emerald-700' : isZero ? 'text-rose-600' : 'text-amber-700'
+                                }`}>
+                                  {isComplete ? '100%' : `${pct}%`}
+                                </span>
+                              </div>
+
+                              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/70">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    isComplete ? 'bg-emerald-600' : isZero ? 'bg-slate-300' : 'bg-amber-500'
+                                  }`}
+                                  style={{ width: `${isComplete ? 100 : pct}%` }}
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-1 mt-1">
+                                {(() => {
+                                  const uploadedDocs = candidate.documents.filter(d => d.status === 'Uploaded' || d.status === 'Verified' || d.fileUrl).length;
+                                  const totalDocs = candidate.documents.length || 4;
+                                  const totalStagesCount = 4;
+                                  const sentEmailsCount = Object.values(candidate.emailAutomation?.stages || {}).filter((s: any) => s?.status === 'Sent').length;
+                                  return (
+                                    <>
+                                      <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                                        uploadedDocs >= totalDocs
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                          : uploadedDocs > 0
+                                          ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                                      }`}>
+                                        {uploadedDocs}/{totalDocs} Docs
+                                      </span>
+
+                                      <button
+                                        onClick={() => onSelectCandidateToInspect(candidate)}
+                                        className={`text-[10px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-0.5 cursor-pointer hover:opacity-80 transition ${
+                                          sentEmailsCount === totalStagesCount
+                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                            : sentEmailsCount > 0
+                                            ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                                        }`} title="Click to view & manage pre-onboarding email automation">
+                                        <Mail className="w-2.5 h-2.5" />
+                                        <span>Emails {sentEmailsCount}/{totalStagesCount}</span>
+                                      </button>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Onboarding Status Badge */}
+                      <td className="py-4 px-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                          candidate.status === 'Ready for Day 1'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                            : candidate.status === 'Under Review'
+                            ? 'bg-amber-100 text-amber-800 border-amber-200'
+                            : candidate.status === 'Form Pending'
+                            ? 'bg-purple-100 text-purple-800 border-purple-200'
+                            : 'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}>
+                          {candidate.status}
+                        </span>
+                      </td>
+
+                      {/* Action buttons */}
+                      <td className="py-4 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleCopyAccessLink(candidate)}
+                            className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition border flex items-center gap-1 cursor-pointer ${
+                              copiedCandidateId === candidate.id
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border-indigo-200'
+                            }`}
+                            title="Copy Candidate Access Link"
+                          >
+                            {copiedCandidateId === candidate.id ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-emerald-700">Copied ✓</span>
+                              </>
+                            ) : (
+                              <>
+                                <Link2 className="w-3.5 h-3.5 text-indigo-600" />
+                                <span className="hidden sm:inline">Copy Link</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() => onSelectCandidateToInspect(candidate)}
+                            className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-[11px] transition border border-purple-200 flex items-center gap-1 cursor-pointer"
+                            title="Inspect Candidate Details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Inspect</span>
+                          </button>
+
+                          <button
+                            onClick={() => onOpenEditCandidate && onOpenEditCandidate(candidate)}
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition border border-amber-200 flex items-center gap-1 cursor-pointer shadow-2xs"
+                            title="Edit Candidate Details"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleReminderClick(candidate)}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition border border-slate-200 cursor-pointer"
+                            title="Send Email Reminder"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => setCandidateToDelete(candidate)}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-bold text-[11px] transition border border-rose-200 cursor-pointer"
+                            title="Delete Candidate Record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => onSwitchToCandidateView(candidate.id)}
+                            className="p-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[11px] transition cursor-pointer"
+                            title="View Portal as this candidate"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+
+                    </tr>
+                  ))}
+
+                  {/* 2. "Joined (n)" Section Divider */}
+                  {joinedCandidates.length > 0 && (
+                    <tr className="bg-emerald-50/85 border-y-2 border-emerald-200">
+                      <td colSpan={7} className="py-2.5 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-600 text-white shadow-2xs">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            Joined ({joinedCandidates.length})
+                          </span>
+                          <span className="text-xs text-emerald-900 font-bold">
+                            Candidates who have completed Day 1 joining & officially joined FieldAssist
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* 3. Already-Joined Candidates (Slightly muted rows, green "Joined ✓" badge) */}
+                  {joinedCandidates.map(candidate => (
+                    <tr key={candidate.id} className="opacity-80 bg-slate-50/60 hover:opacity-100 hover:bg-emerald-50/20 transition group">
+                      
+                      {/* Candidate Name & Email */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <CandidateAvatar candidate={candidate} size="md" />
+                          <div>
+                            <p className="font-bold text-slate-800 group-hover:text-emerald-950">{toTitleCase(candidate.name)}</p>
+                            <p className="text-[11px] text-slate-500">{candidate.email}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-mono font-bold bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded border border-slate-300">
+                                {candidate.accessCode || 'FA-1001'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Role & Department */}
+                      <td className="py-4 px-4">
+                        <p className="font-semibold text-slate-800">{candidate.role}</p>
+                        <span className="inline-block mt-0.5 text-[10px] font-semibold bg-slate-200/80 text-slate-700 px-2 py-0.5 rounded-md">
+                          {candidate.department}
+                        </span>
+                      </td>
+
+                      {/* Joining Date & Location / Work Mode */}
+                      <td className="py-4 px-4">
+                        <p className="font-bold text-slate-800">
+                          {formatJoiningDate(candidate.joiningDate, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {candidate.workMode === 'Remote' ? (
+                            <span className="text-[10px] font-extrabold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200">
+                              💻 Remote ({candidate.remoteCity || candidate.officeCity}, {candidate.remoteCountry || candidate.officeCountry})
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-slate-700 font-bold">
+                              🏢 {candidate.officeCity.toLowerCase().includes('gurg') ? 'Gurgaon' : candidate.officeCity.toLowerCase().includes('beng') || candidate.officeCity.toLowerCase().includes('bang') ? 'Bangalore' : candidate.officeCity.toLowerCase().includes('mumbai') ? 'Mumbai' : candidate.officeCity}
+                            </span>
+                          )}
+                        </div>
+                        {candidate.timeZone && (
+                          <p className="text-[10px] text-slate-400 font-medium">{candidate.timeZone}</p>
+                        )}
+                      </td>
+
+                      {/* HRBP */}
+                      <td className="py-4 px-4">
+                        <p className="font-semibold text-slate-800"><strong className="text-slate-400 font-normal">HRBP:</strong> {candidate.hrbp?.name || 'Unassigned'}</p>
+                      </td>
+
+                      {/* Pre-Onboarding Form Status, Percentage & Documents */}
+                      <td className="py-4 px-4 min-w-[170px]">
+                        {(() => {
+                          const isComplete = isCandidateFormComplete(candidate);
+                          const pct = getCandidateFormPercentage(candidate);
+                          const isZero = !isComplete && pct === 0;
+
+                          return (
+                            <div className="space-y-1.5 max-w-[160px]">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  <span>Completed</span>
+                                </span>
+
+                                <span className="text-[11px] font-black text-emerald-700">
+                                  {isComplete ? '100%' : `${pct}%`}
+                                </span>
+                              </div>
+
+                              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/70">
+                                <div
+                                  className="h-full rounded-full bg-emerald-600"
+                                  style={{ width: `${isComplete ? 100 : pct}%` }}
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-1 mt-1">
+                                {(() => {
+                                  const uploadedDocs = candidate.documents.filter(d => d.status === 'Uploaded' || d.status === 'Verified' || d.fileUrl).length;
+                                  const totalDocs = candidate.documents.length || 4;
+                                  return (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded border bg-emerald-100 text-emerald-800 border-emerald-200">
+                                      {uploadedDocs}/{totalDocs} Docs
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Onboarding Status Badge - Green "Joined ✓" Badge */}
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                          <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
+                          <span>Joined ✓</span>
+                        </span>
+                      </td>
+
+                      {/* Action buttons */}
+                      <td className="py-4 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleCopyAccessLink(candidate)}
+                            className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition border flex items-center gap-1 cursor-pointer ${
+                              copiedCandidateId === candidate.id
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                            }`}
+                            title="Copy Candidate Access Link"
+                          >
+                            {copiedCandidateId === candidate.id ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-emerald-700">Copied ✓</span>
+                              </>
+                            ) : (
+                              <>
+                                <Link2 className="w-3.5 h-3.5 text-slate-600" />
+                                <span className="hidden sm:inline">Copy Link</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() => onSelectCandidateToInspect(candidate)}
+                            className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-[11px] transition border border-purple-200 flex items-center gap-1 cursor-pointer"
+                            title="Inspect Candidate Details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Inspect</span>
+                          </button>
+
+                          <button
+                            onClick={() => onOpenEditCandidate && onOpenEditCandidate(candidate)}
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition border border-amber-200 flex items-center gap-1 cursor-pointer shadow-2xs"
+                            title="Edit Candidate Details"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleReminderClick(candidate)}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition border border-slate-200 cursor-pointer"
+                            title="Send Email Reminder"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => setCandidateToDelete(candidate)}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-bold text-[11px] transition border border-rose-200 cursor-pointer"
+                            title="Delete Candidate Record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => onSwitchToCandidateView(candidate.id)}
+                            className="p-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[11px] transition cursor-pointer"
+                            title="View Portal as this candidate"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+
+                    </tr>
+                  ))}
+                </>
               )}
             </tbody>
           </table>
