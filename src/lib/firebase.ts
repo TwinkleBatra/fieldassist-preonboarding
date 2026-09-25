@@ -121,21 +121,10 @@ export async function lookupCandidateInFirestore(queryStr: string): Promise<Cand
   const rawQ = (queryStr || '').trim();
   if (!rawQ) return null;
 
-  // 1. Direct getDoc if the input matches candidate document ID
-  try {
-    const docRef = doc(db, 'candidates', rawQ);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as Candidate;
-    }
-  } catch {
-    // Ignore and proceed to accessCode query
-  }
-
-  // 2. Query by accessCode with limit(1) (supports exact, uppercase, or lowercase codes)
   const candidateCollection = collection(db, 'candidates');
-  const codesToTry = Array.from(new Set([rawQ.toUpperCase(), rawQ, rawQ.toLowerCase()]));
 
+  // 1. Query by accessCode with limit(1) (supports exact, uppercase, or lowercase codes)
+  const codesToTry = Array.from(new Set([rawQ.toUpperCase(), rawQ, rawQ.toLowerCase()]));
   for (const code of codesToTry) {
     try {
       const q = query(candidateCollection, where('accessCode', '==', code), limit(1));
@@ -148,7 +137,7 @@ export async function lookupCandidateInFirestore(queryStr: string): Promise<Cand
     }
   }
 
-  // 3. Query by registered email with limit(1)
+  // 2. Query by registered email with limit(1)
   try {
     const qEmail = query(candidateCollection, where('email', '==', rawQ.toLowerCase()), limit(1));
     const snap = await getDocs(qEmail);
@@ -159,13 +148,30 @@ export async function lookupCandidateInFirestore(queryStr: string): Promise<Cand
     // Fallback
   }
 
+  // 3. Direct getDoc if the input matches candidate document ID
+  try {
+    const docRef = doc(db, 'candidates', rawQ);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as Candidate;
+    }
+  } catch {
+    // Ignore
+  }
+
   return null;
 }
 
 /**
- * Fetch all candidates from Firestore
+ * Fetch all candidates from Firestore.
+ * Requires authenticated HR user permissions according to security rules.
  */
 export async function fetchCandidatesFromFirestore(): Promise<Candidate[] | null> {
+  // If user is not authenticated, avoid attempting full-collection list which requires HR authorization
+  if (!auth.currentUser) {
+    return null;
+  }
+
   try {
     const querySnapshot = await getDocs(collection(db, 'candidates'));
     if (querySnapshot.empty) return null;
@@ -174,7 +180,11 @@ export async function fetchCandidatesFromFirestore(): Promise<Candidate[] | null
       candidates.push(docSnap.data() as Candidate);
     });
     return candidates;
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code === 'permission-denied') {
+      console.warn('Current user does not have HR permissions to list candidates from Firestore.');
+      return null;
+    }
     console.error('Error fetching candidates from Firestore:', err);
     return null;
   }

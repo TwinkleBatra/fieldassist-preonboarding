@@ -24,16 +24,14 @@ service cloud.firestore {
       allow create: if isHR();
       allow delete: if isHR();
 
-      allow get: if isHR() || (request.auth == null && resource.data.accessCode != null);
+      allow get: if isHR() || resource.data.accessCode != null;
 
       allow list: if isHR() || (
-        request.auth == null &&
         request.query.limit <= 1 &&
         (resource.data.accessCode != null || resource.data.email != null)
       );
 
       allow update: if isHR() || (
-        request.auth == null &&
         request.resource.data.accessCode == resource.data.accessCode &&
         request.resource.data.id == resource.data.id &&
         request.resource.data.joiningDate == resource.data.joiningDate &&

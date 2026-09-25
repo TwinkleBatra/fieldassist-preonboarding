@@ -18,7 +18,7 @@ import { HRAuthModal } from './components/hr/HRAuthModal';
 import { PostOnboardingTransitionView } from './components/candidate/PostOnboardingTransitionView';
 import { getCandidateAccessInfo } from './utils/dateUtils';
 import { getHRBPForDepartment } from './utils/hrbp';
-import { auth, signOut, onAuthStateChanged, User as FirebaseUser } from './lib/firebase';
+import { auth, signOut, onAuthStateChanged, User as FirebaseUser, lookupCandidateInFirestore } from './lib/firebase';
 import { isApprovedHREmail, checkIsHRUser } from './utils/hrAuth';
 
 import {
@@ -87,6 +87,14 @@ export default function App() {
           setIsHRAuthenticated(true);
           setUnapprovedHREmail(null);
           sessionStorage.setItem('fa_hr_auth', 'true');
+          // With confirmed HR authorization, sync candidates from Firestore
+          syncCandidatesWithFirestore().then(synced => {
+            if (synced && synced.length > 0) {
+              setCandidates(synced);
+            }
+          }).catch(err => {
+            console.warn('Sync candidates on auth change notice:', err);
+          });
         } else {
           setHrUser(null);
           setIsHRAuthenticated(false);
@@ -183,11 +191,38 @@ export default function App() {
         setActiveView('candidate');
       } else {
         // Code param was provided but not found in current local dataset
-        setUnmatchedUrlCode(codeParam);
-        setIsCandidateLoggedIn(false);
-        if (!isHrRoute) {
-          setIsCandidateLoginModalOpen(true);
-        }
+        // Securely look up individual candidate via lookupCandidateInFirestore
+        lookupCandidateInFirestore(codeParam).then(remoteMatch => {
+          if (remoteMatch) {
+            saveCandidate(remoteMatch, true).catch(() => {});
+            setCandidates(prev => {
+              const existingIdx = prev.findIndex(c => c.id === remoteMatch.id);
+              if (existingIdx >= 0) {
+                const next = [...prev];
+                next[existingIdx] = remoteMatch;
+                return next;
+              }
+              return [...prev, remoteMatch];
+            });
+            setActiveCandidateIdState(remoteMatch.id);
+            setActiveCandidateId(remoteMatch.id);
+            setIsCandidateLoggedIn(true);
+            setIsCandidateLoginModalOpen(false);
+            setActiveView('candidate');
+          } else {
+            setUnmatchedUrlCode(codeParam);
+            setIsCandidateLoggedIn(false);
+            if (!isHrRoute) {
+              setIsCandidateLoginModalOpen(true);
+            }
+          }
+        }).catch(() => {
+          setUnmatchedUrlCode(codeParam);
+          setIsCandidateLoggedIn(false);
+          if (!isHrRoute) {
+            setIsCandidateLoginModalOpen(true);
+          }
+        });
       }
     } else {
       // Root URL shows ONLY candidate portal login if not already logged in
@@ -196,34 +231,6 @@ export default function App() {
         setIsCandidateLoginModalOpen(true);
       }
     }
-
-    // Sync Firestore data in background
-    syncCandidatesWithFirestore().then(synced => {
-      if (synced && synced.length > 0) {
-        setCandidates(synced);
-        // If codeParam was passed and previously unmatched, try matching against synced candidates
-        if (codeParam) {
-          const q = codeParam.trim().toLowerCase();
-          const remoteMatch = synced.find(c =>
-            c.email.toLowerCase() === q ||
-            (c.accessCode && c.accessCode.toLowerCase() === q) ||
-            c.id.toLowerCase() === q
-          );
-          if (remoteMatch) {
-            setActiveCandidateIdState(remoteMatch.id);
-            setActiveCandidateId(remoteMatch.id);
-            setIsCandidateLoggedIn(true);
-            setIsCandidateLoginModalOpen(false);
-            setActiveView('candidate');
-          }
-        }
-        fetch('/api/emails/sync-candidates', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ candidates: synced })
-        }).catch(() => {});
-      }
-    }).catch(console.error);
   }, []);
 
   const activeCandidate = candidates.find(c => c.id === activeCandidateId) || null;

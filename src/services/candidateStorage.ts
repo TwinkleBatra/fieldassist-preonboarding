@@ -1,6 +1,6 @@
 import { Candidate, FAQItem, HRQuery, RequiredDocument, CandidateFormData, JoiningLocation, FirstDayScheduleItem, EmailStageKey, EmailStageLog } from '../types';
 import { INITIAL_CANDIDATES, INITIAL_FAQS, INITIAL_LOCATIONS, DEFAULT_FIELDASSIST_SCHEDULE } from './mockData';
-import { saveCandidateToFirestore, fetchCandidatesFromFirestore, deleteCandidateFromFirestore } from '../lib/firebase';
+import { saveCandidateToFirestore, fetchCandidatesFromFirestore, deleteCandidateFromFirestore, auth } from '../lib/firebase';
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from './emailTemplates';
 import { getHRBPForDepartment } from '../utils/hrbp';
 import { syncCandidateToGoogleSheets, syncDocumentUpdateToGoogleSheets, syncDocumentAndCandidate } from './googleSheetsSync';
@@ -521,9 +521,12 @@ export const syncCandidatesWithFirestore = async (): Promise<Candidate[]> => {
     }
     return processed;
   }
-  // If remote is empty, populate remote with current local candidates
+  
+  // Return current local candidates without attempting unauthorized Firestore writes
   const current = getCandidates();
-  current.forEach(c => saveCandidateToFirestore(c).catch(err => console.warn('Initial populate firestore notice:', err)));
+  if (remoteCandidates && remoteCandidates.length === 0 && auth.currentUser) {
+    current.forEach(c => saveCandidateToFirestore(c).catch(err => console.warn('Initial populate firestore notice:', err)));
+  }
   return current;
 };
 
