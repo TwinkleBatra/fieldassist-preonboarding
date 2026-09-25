@@ -4,14 +4,17 @@ import { Candidate, OnboardingStatus, JoiningLocation, EmailStageKey } from '../
 import { dispatchCandidateEmail } from '../../services/emailDispatcherService';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { GoogleSheetsSyncModal } from './GoogleSheetsSyncModal';
+import { ManageHRAccessModal } from './ManageHRAccessModal';
 import { CandidateAvatar } from '../CandidateAvatar';
 import { getCandidateAccessUrl } from '../../utils/appUrl';
 import { toTitleCase } from '../../utils/textUtils';
 import { INITIAL_LOCATIONS } from '../../services/mockData';
+import { auth, User as FirebaseUser } from '../../lib/firebase';
 
 interface HRDashboardProps {
   candidates: Candidate[];
   locations: JoiningLocation[];
+  currentUser?: FirebaseUser | null;
   onSelectCandidateToInspect: (candidate: Candidate) => void;
   onOpenAddModal: () => void;
   onOpenLocationManager: () => void;
@@ -27,6 +30,7 @@ interface HRDashboardProps {
 export const HRDashboard: React.FC<HRDashboardProps> = ({
   candidates,
   locations,
+  currentUser,
   onSelectCandidateToInspect,
   onOpenAddModal,
   onOpenLocationManager,
@@ -49,6 +53,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
   const [linkModalData, setLinkModalData] = useState<{ candidateName: string; accessCode: string; url: string } | null>(null);
   const [modalCopied, setModalCopied] = useState(false);
   const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
+  const [isManageHRAccessOpen, setIsManageHRAccessOpen] = useState(false);
 
   const fallbackCopyTextToClipboard = (text: string): boolean => {
     let textArea: HTMLTextAreaElement | null = null;
@@ -369,6 +374,15 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
               <span>Google Sheets Sync</span>
+            </button>
+
+            <button
+              onClick={() => setIsManageHRAccessOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl bg-purple-800/90 hover:bg-purple-800 text-white text-xs font-bold transition border border-purple-500/50 flex items-center gap-2 cursor-pointer shadow-xs"
+              title="Manage HR Access and Team Permissions"
+            >
+              <ShieldCheck className="w-4 h-4 text-purple-300" />
+              <span>Manage HR Access</span>
             </button>
 
             <button
@@ -1039,6 +1053,13 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
         isOpen={isGoogleSheetsModalOpen}
         onClose={() => setIsGoogleSheetsModalOpen(false)}
         candidates={candidates}
+      />
+
+      {/* Manage HR Access Modal */}
+      <ManageHRAccessModal
+        isOpen={isManageHRAccessOpen}
+        onClose={() => setIsManageHRAccessOpen(false)}
+        currentUser={currentUser || auth.currentUser}
       />
 
       {/* Delete Candidate Confirmation Modal */}

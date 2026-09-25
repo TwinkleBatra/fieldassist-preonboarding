@@ -19,7 +19,7 @@ import { PostOnboardingTransitionView } from './components/candidate/PostOnboard
 import { getCandidateAccessInfo } from './utils/dateUtils';
 import { getHRBPForDepartment } from './utils/hrbp';
 import { auth, signOut, onAuthStateChanged, User as FirebaseUser } from './lib/firebase';
-import { isApprovedHREmail } from './utils/hrAuth';
+import { isApprovedHREmail, checkIsHRUser } from './utils/hrAuth';
 
 import {
   getCandidates,
@@ -58,6 +58,7 @@ export default function App() {
     return Boolean(user && user.email && isApprovedHREmail(user.email));
   });
   const [hrUser, setHrUser] = useState<FirebaseUser | null>(() => auth.currentUser);
+  const [unapprovedHREmail, setUnapprovedHREmail] = useState<string | null>(null);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
 
   // Active Candidate Portal Tab
@@ -78,11 +79,26 @@ export default function App() {
 
   // Listen to Firebase Auth state for authorized HR users
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email && isApprovedHREmail(user.email)) {
-        setHrUser(user);
-        setIsHRAuthenticated(true);
-        sessionStorage.setItem('fa_hr_auth', 'true');
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && user.email) {
+        const isAuth = await checkIsHRUser(user);
+        if (isAuth) {
+          setHrUser(user);
+          setIsHRAuthenticated(true);
+          setUnapprovedHREmail(null);
+          sessionStorage.setItem('fa_hr_auth', 'true');
+        } else {
+          setHrUser(null);
+          setIsHRAuthenticated(false);
+          sessionStorage.removeItem('fa_hr_auth');
+          const pathname = window.location.pathname;
+          const isHr = pathname === '/hr' || pathname.startsWith('/hr') || new URLSearchParams(window.location.search).get('view') === 'hr';
+          if (isHr) {
+            setUnapprovedHREmail(user.email);
+            setIsHRAuthModalOpen(true);
+            await signOut(auth);
+          }
+        }
       } else {
         setHrUser(null);
         setIsHRAuthenticated(false);
@@ -95,7 +111,7 @@ export default function App() {
 
   // Synchronize route with URL path
   useEffect(() => {
-    const handleLocationChange = () => {
+    const handleLocationChange = async () => {
       const pathname = window.location.pathname;
       const urlParams = new URLSearchParams(window.location.search);
       const isHr = pathname === '/hr' || pathname.startsWith('/hr') || urlParams.get('view') === 'hr';
@@ -103,9 +119,18 @@ export default function App() {
       if (isHr) {
         setActiveView('hr');
         const currentUser = auth.currentUser;
-        const isAuth = Boolean(currentUser && currentUser.email && isApprovedHREmail(currentUser.email));
-        setIsHRAuthenticated(isAuth);
-        if (!isAuth) {
+        if (currentUser && currentUser.email) {
+          const isAuth = await checkIsHRUser(currentUser);
+          setIsHRAuthenticated(isAuth);
+          if (!isAuth) {
+            setUnapprovedHREmail(currentUser.email);
+            setIsHRAuthModalOpen(true);
+            await signOut(auth);
+          } else {
+            setHrUser(currentUser);
+          }
+        } else {
+          setIsHRAuthenticated(false);
           setIsHRAuthModalOpen(true);
         }
       } else {
@@ -243,6 +268,7 @@ export default function App() {
 
   const handleHRAuthClose = () => {
     setIsHRAuthModalOpen(false);
+    setUnapprovedHREmail(null);
     if (!isHRAuthenticated) {
       // Redirect back to root candidate portal if HR auth closed without unlocking
       window.history.pushState({}, '', '/');
@@ -600,6 +626,7 @@ export default function App() {
           <HRDashboard
             candidates={candidates}
             locations={locations}
+            currentUser={hrUser}
             firestoreError={firestoreError}
             onClearFirestoreError={() => setFirestoreError(null)}
             onSelectCandidateToInspect={setInspectCandidate}
@@ -631,6 +658,7 @@ export default function App() {
         isOpen={isHRAuthModalOpen}
         onClose={handleHRAuthClose}
         onSuccess={handleHRAuthSuccess}
+        initialUnapprovedEmail={unapprovedHREmail}
       />
 
       <AddedCandidateSuccessModal

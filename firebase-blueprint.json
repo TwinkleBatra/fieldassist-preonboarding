@@ -45,9 +45,24 @@
       "properties": {
         "links": { "type": "object" }
       }
+    },
+    "hrAdmins": {
+      "title": "HR Administrators",
+      "description": "Authorized HR admin members who can access the HR command center",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "addedBy": { "type": "string" },
+        "addedAt": { "type": "string" }
+      },
+      "required": ["email", "addedBy", "addedAt"]
     }
   },
   "firestore": {
+    "/hrAdmins/{adminEmail}": {
+      "schema": "hrAdmins",
+      "description": "Collection of authorized HR admins indexed by lowercase email"
+    },
     "/candidates/{candidateId}": {
       "schema": "candidates",
       "description": "Candidates undergoing pre-onboarding, managed by HR"
