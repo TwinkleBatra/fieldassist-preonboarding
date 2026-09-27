@@ -133,7 +133,7 @@ async function runRulesTests() {
   // Verification: when an email doc does not exist in hrAdmins, access to HR collections is DENIED.
   try {
     // Attempt to read/write hrAdmins as a non-existent HR member
-    const nonExistentAdminRef = doc(db, 'hrAdmins', 'removed.hr.member@flick2know.com');
+    const nonExistentAdminRef = doc(db, 'hrAdmins', 'removed.hr.member@fieldassist.com');
     await getDoc(nonExistentAdminRef);
     recordResult('Test (b)', 'Removed HR email loses access immediately (cannot read hrAdmins)', 'DENIED', 'ALLOWED');
   } catch (err: any) {

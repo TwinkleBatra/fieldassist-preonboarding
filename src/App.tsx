@@ -20,6 +20,7 @@ import { getCandidateAccessInfo } from './utils/dateUtils';
 import { getHRBPForDepartment } from './utils/hrbp';
 import { auth, signOut, onAuthStateChanged, User as FirebaseUser, lookupCandidateInFirestore } from './lib/firebase';
 import { isApprovedHREmail, checkIsHRUser } from './utils/hrAuth';
+import { seedOwnerHRAdmin } from './services/hrAdminService';
 
 import {
   getCandidates,
@@ -87,6 +88,8 @@ export default function App() {
           setIsHRAuthenticated(true);
           setUnapprovedHREmail(null);
           sessionStorage.setItem('fa_hr_auth', 'true');
+          // Ensure owner admin record in hrAdmins is seeded
+          seedOwnerHRAdmin().catch(() => {});
           // With confirmed HR authorization, sync candidates from Firestore
           syncCandidatesWithFirestore().then(synced => {
             if (synced && synced.length > 0) {
@@ -263,6 +266,9 @@ export default function App() {
     setIsHRAuthModalOpen(false);
     setActiveView('hr');
 
+    // Ensure owner record in hrAdmins is seeded
+    seedOwnerHRAdmin().catch(() => {});
+
     // Fetch full candidates collection from Firestore with authorized HR credentials
     syncCandidatesWithFirestore().then(synced => {
       if (synced && synced.length > 0) {
@@ -319,14 +325,15 @@ export default function App() {
     }
   };
 
-  const handleUpdateStatus = (candidateId: string, status: OnboardingStatus) => {
+  const handleUpdateStatus = async (candidateId: string, status: OnboardingStatus) => {
     const cand = candidates.find(c => c.id === candidateId);
     if (!cand) return;
     const updated = { ...cand, status };
-    saveCandidate(updated);
-    setCandidates(getCandidates());
+    await saveCandidate(updated);
+    const refreshed = getCandidates();
+    setCandidates(refreshed);
     if (inspectCandidate && inspectCandidate.id === candidateId) {
-      setInspectCandidate(updated);
+      setInspectCandidate(refreshed.find(c => c.id === candidateId) || updated);
     }
   };
 
@@ -376,7 +383,7 @@ export default function App() {
     }
   };
 
-  const handleSubmitHRQuery = (subject: string, message: string, recipientName = 'Twinkle Verma', recipientEmail = 'twinkle.verma@flick2know.com') => {
+  const handleSubmitHRQuery = (subject: string, message: string, recipientName = 'Twinkle Verma', recipientEmail = 'twinkle.verma@fieldassist.com') => {
     if (!activeCandidate) return;
     submitHRQuery({
       candidateId: activeCandidate.id,
@@ -477,7 +484,7 @@ export default function App() {
   };
 
   const handleSaveCandidateCoreDetails = async (candidateId: string, updates: CandidateCoreDetailsUpdate) => {
-    const updated = updateCandidateCoreDetails(candidateId, updates);
+    const updated = await updateCandidateCoreDetails(candidateId, updates);
     const refreshed = getCandidates();
     setCandidates(refreshed);
     if (inspectCandidate && inspectCandidate.id === candidateId) {

@@ -24,13 +24,13 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
   const hasResend = Boolean(process.env.RESEND_API_KEY);
 
   // 1. SMTP Priority (Google Workspace / Gmail or custom SMTP)
-  // Google Workspace SMTP with @flick2know.com guarantees 100% SPF/DKIM/DMARC alignment.
+  // Google Workspace SMTP with @fieldassist.com guarantees 100% SPF/DKIM/DMARC alignment.
   // Resend's free sandbox (onboarding@resend.dev) is automatically flagged as spam by Google and Outlook.
   if (hasSmtp && preferred !== 'resend') {
     try {
       const transporter = createTransporter();
       const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-      const userDomain = smtpUser.includes('@') ? smtpUser.split('@')[1] : 'flick2know.com';
+      const userDomain = smtpUser.includes('@') ? smtpUser.split('@')[1] : 'fieldassist.com';
       
       // Best-practice anti-spam sender formatting
       const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
@@ -99,7 +99,7 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
           subject,
           text: bodyText,
           html: bodyHtml,
-          reply_to: smtpUser || 'twinkle.verma@flick2know.com',
+          reply_to: smtpUser || 'twinkle.verma@fieldassist.com',
         }),
       });
 

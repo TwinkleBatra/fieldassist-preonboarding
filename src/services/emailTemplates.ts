@@ -47,7 +47,7 @@ const OFFICIAL_FOOTER_HTML = `
   <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.5;">
     <p style="margin: 0 0 6px 0; font-weight: bold; color: #475569;">FieldAssist (Flick2Know Technologies Pvt. Ltd.)</p>
     <p style="margin: 0 0 4px 0;">Corporate HQ: Plot No. 12, Sector 44, Gurugram, Haryana 122003, India</p>
-    <p style="margin: 0;">This email is an official onboarding communication sent by FieldAssist HR. If you received this in error, please reply to <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5;">twinkle.verma@flick2know.com</a>.</p>
+    <p style="margin: 0;">This email is an official onboarding communication sent by FieldAssist HR. If you received this in error, please reply to <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5;">twinkle.verma@fieldassist.com</a>.</p>
   </div>
 `;
 
@@ -55,7 +55,7 @@ const OFFICIAL_FOOTER_TEXT = `
 ---
 FieldAssist (Flick2Know Technologies Pvt. Ltd.)
 Corporate HQ: Plot No. 12, Sector 44, Gurugram, Haryana 122003, India
-Official HR Onboarding Communication | twinkle.verma@flick2know.com
+Official HR Onboarding Communication | twinkle.verma@fieldassist.com
 `;
 
 export const EMAIL_TEMPLATES: Record<EmailStageKey, EmailTemplateDefinition> = {
@@ -84,7 +84,7 @@ What to do next:
 
 Please log in and submit the form as soon as possible. Completing this promptly ensures your background verification, IT asset allocation, and welcome kit are prepared smoothly ahead of your Day 1.
 
-If you have any questions or need support, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
+If you have any questions or need support, feel free to reach out to HR (Twinkle Verma at twinkle.verma@fieldassist.com).
 
 We can’t wait to welcome you aboard!
 
@@ -130,7 +130,7 @@ ${OFFICIAL_FOOTER_TEXT}`;
     </div>
 
     <p style="font-size: 14px; color: #334155;">
-      If you have any questions or need support at any stage, feel free to reply directly or contact HR (Twinkle Verma at <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@flick2know.com</a>).
+      If you have any questions or need support at any stage, feel free to reply directly or contact HR (Twinkle Verma at <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@fieldassist.com</a>).
     </p>
 
     <p style="margin-top: 28px; margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
@@ -146,11 +146,11 @@ ${OFFICIAL_FOOTER_TEXT}`;
     subject: 'Welcome to FieldAssist – Your Onboarding Journey Starts Here!',
     getFirstName: extractFirstName,
     getBodyText: (firstName: string, candidate?: Candidate) => {
-      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('welcome_7d', cand, firstName).bodyText;
     },
     getHtmlContent: (firstName: string, candidate?: Candidate) => {
-      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('welcome_7d', cand, firstName).bodyHtml;
     }
   },
@@ -162,11 +162,11 @@ ${OFFICIAL_FOOTER_TEXT}`;
     subject: 'You + FieldAssist = Let’s Get Started!',
     getFirstName: extractFirstName,
     getBodyText: (firstName: string, candidate?: Candidate) => {
-      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('culture_5d', cand, firstName).bodyText;
     },
     getHtmlContent: (firstName: string, candidate?: Candidate) => {
-      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('culture_5d', cand, firstName).bodyHtml;
     }
   },
@@ -178,11 +178,11 @@ ${OFFICIAL_FOOTER_TEXT}`;
     subject: 'Getting Started at FieldAssist – Resources to Know Us Better!',
     getFirstName: extractFirstName,
     getBodyText: (firstName: string, candidate?: Candidate) => {
-      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('comm_3d', cand, firstName).bodyText;
     },
     getHtmlContent: (firstName: string, candidate?: Candidate) => {
-      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@flick2know.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
+      const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('comm_3d', cand, firstName).bodyHtml;
     }
   },
@@ -241,7 +241,7 @@ All required documents are collected online, and the remaining employment formal
 
 Just bring yourself, your enthusiasm, and any questions you may have. 😊
 
-If you need any help before joining, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
+If you need any help before joining, feel free to reach out to HR (Twinkle Verma at twinkle.verma@fieldassist.com).
 
 See you tomorrow! 🚀
 
@@ -308,7 +308,7 @@ ${OFFICIAL_FOOTER_TEXT}`;
       <p style="margin: 0; font-size: 13px;">Just bring yourself, your enthusiasm, and any questions you may have. 😊</p>
     </div>
 
-    <p style="font-size: 14px;">If you need any help before joining, feel free to reply directly to this email or reach out to HR (Twinkle Verma at <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@flick2know.com</a>).</p>
+    <p style="font-size: 14px;">If you need any help before joining, feel free to reply directly to this email or reach out to HR (Twinkle Verma at <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@fieldassist.com</a>).</p>
     <p style="font-weight: bold; font-size: 16px; color: #4f46e5;">See you tomorrow! 🚀</p>
     
     <p style="margin-top: 24px; margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>

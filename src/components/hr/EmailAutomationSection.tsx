@@ -31,7 +31,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
 
   // Test Mode State
   const [testStage, setTestStage] = useState<EmailStageKey>('account_ready');
-  const [testEmail, setTestEmail] = useState(candidate.email || 'twinkle.verma@flick2know.com');
+  const [testEmail, setTestEmail] = useState(candidate.email || 'twinkle.verma@fieldassist.com');
   const [testLoading, setTestLoading] = useState(false);
 
   const fetchProviderStatus = async () => {
@@ -88,7 +88,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          toEmail: 'twinkle.verma@flick2know.com',
+          toEmail: 'twinkle.verma@fieldassist.com',
           stageKey,
           recipientName: 'Twinkle Verma'
         })
@@ -276,7 +276,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                 <>
                   Emails are currently routing through <strong>onboarding@resend.dev</strong> because <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">RESEND_API_KEY</code> is active without a verified custom domain. <strong>Google &amp; Outlook automatically flag onboarding@resend.dev as spam.</strong>
                   <br />
-                  <span className="font-semibold text-purple-900">How to fix:</span> Add <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_USER=twinkle.verma@flick2know.com</code> and <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_PASS=&lt;16-char-app-password&gt;</code> in your Vercel Project Settings &rarr; Environment Variables. The app will immediately send from your verified Google Workspace account and land in the Primary Inbox.
+                  <span className="font-semibold text-purple-900">How to fix:</span> Add <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_USER=twinkle.verma@fieldassist.com</code> and <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_PASS=&lt;16-char-app-password&gt;</code> in your Vercel Project Settings &rarr; Environment Variables. The app will immediately send from your verified Google Workspace account and land in the Primary Inbox.
                 </>
               ) : providerStatus?.hasApiKey ? (
                 `Delivering directly via ${providerStatus.provider}. Sender: ${providerStatus.fromEmail}. SPF/DKIM aligned with 0% spam score.`
@@ -293,7 +293,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
             onClick={() => handleSendTestToTwinkle('account_ready')}
             disabled={testSendingTwinkle}
             className="px-3 py-1.5 bg-purple-900 hover:bg-black text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
-            title="Send an actual test email to twinkle.verma@flick2know.com"
+            title="Send an actual test email to twinkle.verma@fieldassist.com"
           >
             {testSendingTwinkle ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -550,7 +550,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
               type="email"
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
-              placeholder="e.g. hr.test@flick2know.com"
+              placeholder="e.g. hr.test@fieldassist.com"
               required
               className="w-full bg-white border border-purple-200 rounded-lg p-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600/30"
             />

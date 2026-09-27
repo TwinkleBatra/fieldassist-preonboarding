@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Filter, Plus, Users, Clock, CheckCircle2, UserCheck, AlertCircle, Eye, Mail, FileText, ChevronRight, ShieldCheck, Download, Globe, MapPin, Link2, Copy, Check, X, FileCheck, Table, FileSpreadsheet, Trash2, Pencil } from 'lucide-react';
 import { Candidate, OnboardingStatus, JoiningLocation, EmailStageKey } from '../../types';
 import { dispatchCandidateEmail } from '../../services/emailDispatcherService';
-import { formatJoiningDate } from '../../utils/dateUtils';
+import { formatJoiningDate, getTodayDateString, getEffectiveCandidateStatus, isCandidateJoinedLive } from '../../utils/dateUtils';
 import { GoogleSheetsSyncModal } from './GoogleSheetsSyncModal';
 import { ManageHRAccessModal } from './ManageHRAccessModal';
 import { CandidateAvatar } from '../CandidateAvatar';
@@ -168,16 +168,11 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
     return typeof c.formData?.completionPercentage === 'number' ? c.formData.completionPercentage : 0;
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayDateString();
 
   // Helper to determine if candidate has already joined (Date of Joining <= today, excluding cancelled/rejected/inactive)
   const isJoinedCandidate = (c: Candidate): boolean => {
-    const statusStr = (c.status || '').toLowerCase();
-    if (statusStr.includes('cancel') || statusStr.includes('reject') || statusStr.includes('inactive')) {
-      return false;
-    }
-    if (c.status === 'Joined' || c.status === 'Onboarding Complete') return true;
-    return Boolean(c.joiningDate && c.joiningDate <= todayStr);
+    return isCandidateJoinedLive(c);
   };
 
   const isUpcomingCandidate = (c: Candidate): boolean => {
@@ -185,7 +180,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
     if (statusStr.includes('cancel') || statusStr.includes('reject') || statusStr.includes('inactive')) {
       return false;
     }
-    return !isJoinedCandidate(c);
+    return !isCandidateJoinedLive(c);
   };
 
   // Compute metrics
@@ -196,7 +191,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
   const inProgressFormCount = candidates.filter(c => !isCandidateFormComplete(c) && getCandidateFormPercentage(c) > 0).length;
   const notStartedFormCount = candidates.filter(c => !isCandidateFormComplete(c) && getCandidateFormPercentage(c) === 0).length;
   const pendingFormCount = totalCount - completedFormCount;
-  const readyForDay1Count = candidates.filter(c => c.status === 'Ready for Day 1').length;
+  const readyForDay1Count = candidates.filter(c => getEffectiveCandidateStatus(c) === 'Ready for Day 1').length;
   const remoteJoinersCount = candidates.filter(c => c.workMode === 'Remote').length;
 
   const departments = ['All', ...Array.from(new Set(candidates.map(c => c.department)))];
@@ -234,7 +229,7 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
         ? true
         : statusFilter === 'Joined'
         ? isJoinedCandidate(c)
-        : c.status === statusFilter;
+        : getEffectiveCandidateStatus(c) === statusFilter;
     const matchesDept = departmentFilter === 'All' || c.department === departmentFilter;
     
     let matchesLocation = true;
@@ -698,17 +693,22 @@ export const HRDashboard: React.FC<HRDashboardProps> = ({
 
                       {/* Onboarding Status Badge */}
                       <td className="py-4 px-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
-                          candidate.status === 'Ready for Day 1'
-                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                            : candidate.status === 'Under Review'
-                            ? 'bg-amber-100 text-amber-800 border-amber-200'
-                            : candidate.status === 'Form Pending'
-                            ? 'bg-purple-100 text-purple-800 border-purple-200'
-                            : 'bg-slate-100 text-slate-700 border-slate-200'
-                        }`}>
-                          {candidate.status}
-                        </span>
+                        {(() => {
+                          const liveStatus = getEffectiveCandidateStatus(candidate);
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                              liveStatus === 'Ready for Day 1'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                : liveStatus === 'Under Review'
+                                ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                : liveStatus === 'Form Pending'
+                                ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                            }`}>
+                              {liveStatus}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Action buttons */}

@@ -2,7 +2,8 @@ import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/fi
 import { db, auth, signOut } from '../lib/firebase';
 import { User } from 'firebase/auth';
 
-export const OWNER_EMAIL = 'twinkle.verma@flick2know.com';
+export const OWNER_EMAIL = 'twinkle.verma@fieldassist.com';
+export const OWNER_EMAILS = ['twinkle.verma@fieldassist.com', 'twinkle.verma@flick2know.com'];
 
 export interface HRAdminDoc {
   email: string;
@@ -15,7 +16,8 @@ export interface HRAdminDoc {
  */
 export function isOwnerEmail(email?: string | null): boolean {
   if (!email) return false;
-  return email.trim().toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const normalized = email.trim().toLowerCase();
+  return OWNER_EMAILS.some(e => e.toLowerCase() === normalized);
 }
 
 /**
@@ -29,7 +31,7 @@ export async function checkIsHRUser(user?: User | null): Promise<boolean> {
   const normalizedEmail = user.email.trim().toLowerCase();
 
   // 1. Owner email is always approved
-  if (normalizedEmail === OWNER_EMAIL.toLowerCase()) {
+  if (isOwnerEmail(normalizedEmail)) {
     return true;
   }
 
@@ -75,8 +77,11 @@ export async function fetchHRAdmins(): Promise<HRAdminDoc[]> {
     });
   }
 
+  // Filter out any legacy owner record if accidentally present
+  const filteredAdmins = admins.filter(a => a.email.toLowerCase() !== 'twinkle.verma@flick2know.com');
+
   // Sort: owner first, then alphabetically
-  return admins.sort((a, b) => {
+  return filteredAdmins.sort((a, b) => {
     if (a.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return -1;
     if (b.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return 1;
     return a.email.localeCompare(b.email);
@@ -96,6 +101,17 @@ export async function seedOwnerHRAdmin(): Promise<void> {
         addedBy: 'System Owner',
         addedAt: new Date().toISOString()
       });
+    }
+
+    // Clean up legacy owner record in hrAdmins if present
+    try {
+      const legacyOwnerRef = doc(db, 'hrAdmins', 'twinkle.verma@flick2know.com');
+      const legacySnap = await getDoc(legacyOwnerRef);
+      if (legacySnap.exists()) {
+        await deleteDoc(legacyOwnerRef);
+      }
+    } catch {
+      // Ignore if not found or restricted
     }
   } catch (err) {
     // Ignore if not permitted or network issue

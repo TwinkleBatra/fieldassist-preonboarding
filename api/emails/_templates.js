@@ -23,7 +23,7 @@ const FOOTER_HTML = `
   <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.5;">
     <p style="margin: 0 0 6px 0; font-weight: bold; color: #475569;">FieldAssist (Flick2Know Technologies Pvt. Ltd.)</p>
     <p style="margin: 0 0 4px 0;">Corporate HQ: Plot No. 12, Sector 44, Gurugram, Haryana 122003, India</p>
-    <p style="margin: 0;">This email is an official onboarding communication sent by FieldAssist HR. If you received this in error, please reply to <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5;">twinkle.verma@flick2know.com</a>.</p>
+    <p style="margin: 0;">This email is an official onboarding communication sent by FieldAssist HR. If you received this in error, please reply to <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5;">twinkle.verma@fieldassist.com</a>.</p>
   </div>
 `;
 
@@ -31,7 +31,7 @@ const FOOTER_TEXT = `
 ---
 FieldAssist (Flick2Know Technologies Pvt. Ltd.)
 Corporate HQ: Plot No. 12, Sector 44, Gurugram, Haryana 122003, India
-Official HR Onboarding Communication | twinkle.verma@flick2know.com
+Official HR Onboarding Communication | twinkle.verma@fieldassist.com
 `;
 
 export function getFullEmailContent(stageKey, candidate, origin = 'https://fieldassist-preonboarding.vercel.app') {
@@ -81,7 +81,7 @@ What to do next:
 
 Please log in and submit the form as soon as possible. Completing this promptly ensures your background verification, IT asset allocation, and welcome kit are prepared smoothly ahead of your Day 1.
 
-If you have any questions or need support at any stage, feel free to reply directly to this email or reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
+If you have any questions or need support at any stage, feel free to reply directly to this email or reach out to HR (Twinkle Verma at twinkle.verma@fieldassist.com).
 
 We can’t wait to welcome you aboard!
 
@@ -125,7 +125,7 @@ ${FOOTER_TEXT}`;
     </div>
 
     <p style="font-size: 14px; color: #334155;">
-      If you have any questions or need support at any stage, feel free to reply directly to this email or contact HR (Twinkle Verma at <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@flick2know.com</a>).
+      If you have any questions or need support at any stage, feel free to reply directly to this email or contact HR (Twinkle Verma at <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@fieldassist.com</a>).
     </p>
 
     <p style="margin-top: 24px; margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
@@ -151,7 +151,7 @@ For now, here’s what you can expect:
 • Access to our AMMO pre-read, to help you get familiar with FieldAssist: ${ammoPrereadText}
 • Candidate Pre-Onboarding Portal: ${portalUrl} (Access Code: ${accessCode})
 
-In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
+In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at twinkle.verma@fieldassist.com).
 
 Cheers!
 
@@ -183,7 +183,7 @@ ${FOOTER_TEXT}`;
     </div>
 
     <p style="font-size: 14px; color: #334155;">
-      In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@flick2know.com</a>).
+      In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@fieldassist.com</a>).
     </p>
     <p style="margin-top: 24px;">Cheers!</p>
     <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
@@ -367,7 +367,7 @@ You don't need to carry any physical documents tomorrow.
 All required documents are collected online, and the remaining employment formalities will be completed through Keka.
 Just bring yourself, your enthusiasm, and any questions you may have. 😊
 
-If you need any help before joining, feel free to reply directly to this email or reach out to HR (Twinkle Verma at twinkle.verma@flick2know.com).
+If you need any help before joining, feel free to reply directly to this email or reach out to HR (Twinkle Verma at twinkle.verma@fieldassist.com).
 
 See you tomorrow! 🚀
 

@@ -7,7 +7,7 @@ const OFFICIAL_FOOTER_HTML = `
   <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.5;">
     <p style="margin: 0 0 6px 0; font-weight: bold; color: #475569;">FieldAssist (Flick2Know Technologies Pvt. Ltd.)</p>
     <p style="margin: 0 0 4px 0;">Corporate HQ: Plot No. 12, Sector 44, Gurugram, Haryana 122003, India</p>
-    <p style="margin: 0;">This email is an official onboarding communication sent by FieldAssist HR. If you received this in error, please reply to <a href="mailto:twinkle.verma@flick2know.com" style="color: #4f46e5;">twinkle.verma@flick2know.com</a>.</p>
+    <p style="margin: 0;">This email is an official onboarding communication sent by FieldAssist HR. If you received this in error, please reply to <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5;">twinkle.verma@fieldassist.com</a>.</p>
   </div>
 `;
 
@@ -15,7 +15,7 @@ const OFFICIAL_FOOTER_TEXT = `
 ---
 FieldAssist (Flick2Know Technologies Pvt. Ltd.)
 Corporate HQ: Plot No. 12, Sector 44, Gurugram, Haryana 122003, India
-Official HR Onboarding Communication | twinkle.verma@flick2know.com
+Official HR Onboarding Communication | twinkle.verma@fieldassist.com
 `;
 
 export function resolveUrl(linkKey: string | undefined, links: LinksSettingsDoc): { url: string; isMissing: boolean } {

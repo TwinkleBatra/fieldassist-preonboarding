@@ -14,7 +14,7 @@ export const PostOnboardingTransitionView: React.FC<PostOnboardingTransitionView
   onLogout
 }) => {
   const formattedJoiningDate = formatJoiningDate(candidate.joiningDate);
-  const hrbpEmail = candidate.hrbp?.email || 'twinkle.verma@flick2know.com';
+  const hrbpEmail = candidate.hrbp?.email || 'twinkle.verma@fieldassist.com';
   const hrbpName = candidate.hrbp?.name || 'Twinkle Verma';
 
   return (

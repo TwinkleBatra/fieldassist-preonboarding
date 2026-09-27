@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const toEmail = body?.toEmail || 'twinkle.verma@flick2know.com';
+    const toEmail = body?.toEmail || 'twinkle.verma@fieldassist.com';
     const recipientName = body?.recipientName || 'Twinkle Verma';
     const stageKey = body?.stageKey || 'account_ready';
 

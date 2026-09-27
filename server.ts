@@ -129,11 +129,11 @@ async function startServer() {
     res.json(result);
   });
 
-  // POST /api/emails/send-test - Send a test email directly to any address (e.g. twinkle.verma@flick2know.com)
+  // POST /api/emails/send-test - Send a test email directly to any address (e.g. twinkle.verma@fieldassist.com)
   app.post("/api/emails/send-test", async (req, res) => {
     try {
       const { toEmail, stageKey, recipientName } = req.body;
-      const targetEmail = toEmail || "twinkle.verma@flick2know.com";
+      const targetEmail = toEmail || "twinkle.verma@fieldassist.com";
       const targetStage = (stageKey as EmailStageKey) || "account_ready";
       const template = EMAIL_TEMPLATES[targetStage] || EMAIL_TEMPLATES.account_ready;
       const name = recipientName || "Twinkle Verma";
@@ -161,7 +161,7 @@ async function startServer() {
         reportingManagerRole: "Director",
         hrbp: {
           name: "Twinkle Verma",
-          email: "twinkle.verma@flick2know.com",
+          email: "twinkle.verma@fieldassist.com",
           role: "People & Culture Lead",
           phone: "+91 98765 43210"
         },

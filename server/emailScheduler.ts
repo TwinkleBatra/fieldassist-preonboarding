@@ -153,7 +153,7 @@ export async function sendEmailViaProvider(options: {
       const transporter = createSmtpTransporter();
       const hostName = process.env.SMTP_HOST || 'smtp.gmail.com';
       const user = (process.env.SMTP_USER || '').trim();
-      const userDomain = user.includes('@') ? user.split('@')[1] : 'flick2know.com';
+      const userDomain = user.includes('@') ? user.split('@')[1] : 'fieldassist.com';
       const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
       const fromEmail = process.env.EMAIL_FROM || `"${senderDisplayName}" <${user}>`;
       const customMessageId = `<fa-onboard-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@${userDomain}>`;

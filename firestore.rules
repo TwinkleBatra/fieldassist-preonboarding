@@ -9,6 +9,8 @@ service cloud.firestore {
         (
           request.auth.token.email == 'twinkle.verma@flick2know.com' ||
           request.auth.token.email.lower() == 'twinkle.verma@flick2know.com' ||
+          request.auth.token.email == 'twinkle.verma@fieldassist.com' ||
+          request.auth.token.email.lower() == 'twinkle.verma@fieldassist.com' ||
           exists(/databases/$(database)/documents/hrAdmins/$(request.auth.token.email.lower()))
         );
     }
@@ -17,7 +19,7 @@ service cloud.firestore {
       allow read: if isHR();
       allow create: if isHR();
       allow update: if false;
-      allow delete: if isHR() && adminEmail != 'twinkle.verma@flick2know.com';
+      allow delete: if isHR() && adminEmail != 'twinkle.verma@fieldassist.com' && adminEmail != 'twinkle.verma@flick2know.com';
     }
 
     match /candidates/{candidateId} {

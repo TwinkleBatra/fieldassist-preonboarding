@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, Sparkles, UserCheck } from 'lucide-react';
 import { Candidate } from '../../types';
-import { formatJoiningDate, getDaysUntilJoining, getCandidateAccessInfo } from '../../utils/dateUtils';
+import { formatJoiningDate, getDaysUntilJoining, getCandidateAccessInfo, getEffectiveCandidateStatus } from '../../utils/dateUtils';
 import { toTitleCase } from '../../utils/textUtils';
 
 interface WelcomeBannerProps {
@@ -72,7 +72,7 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({
               <Sparkles className="w-3 h-3 text-purple-300" />
               Welcome to the Squad
             </span>
-            {getStatusBadge(candidate.status)}
+            {getStatusBadge(getEffectiveCandidateStatus(candidate))}
           </div>
 
           <div>

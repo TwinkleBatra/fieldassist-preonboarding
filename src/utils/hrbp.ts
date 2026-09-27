@@ -4,7 +4,7 @@ import { toTitleCase } from './textUtils';
 export const PRIMARY_HR_CONTACT: HRContact = {
   name: 'Twinkle Verma',
   role: 'HR',
-  email: 'twinkle.verma@flick2know.com',
+  email: 'twinkle.verma@fieldassist.com',
   phone: '+91 98100 12345',
   whatsapp: '+91 98100 12345',
   avatarUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80'

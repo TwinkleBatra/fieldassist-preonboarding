@@ -4,6 +4,7 @@ import { saveCandidateToFirestore, fetchCandidatesFromFirestore, deleteCandidate
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from './emailTemplates';
 import { getHRBPForDepartment } from '../utils/hrbp';
 import { syncCandidateToGoogleSheets, syncDocumentUpdateToGoogleSheets, syncDocumentAndCandidate } from './googleSheetsSync';
+import { getTodayDateString, getEffectiveCandidateStatus, derivePreJoiningStatus, isCandidateJoinedLive } from '../utils/dateUtils';
 
 const STORAGE_KEYS = {
   CANDIDATES: 'fieldassist_candidates_v5',
@@ -80,25 +81,20 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
 };
 
 export const checkAndAutoMarkJoined = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
-  if (candidate.status === 'Joined' || candidate.status === 'Onboarding Complete') {
-    return { candidate, updated: false };
-  }
   const statusStr = (candidate.status as string || '').toLowerCase();
-  if (statusStr.includes('cancel') || statusStr.includes('reject')) {
+  if (statusStr.includes('cancel') || statusStr.includes('reject') || statusStr.includes('inactive')) {
     return { candidate, updated: false };
   }
 
-  if (candidate.joiningDate) {
-    const today = new Date().toISOString().split('T')[0];
-    if (candidate.joiningDate <= today) {
-      return {
-        candidate: {
-          ...candidate,
-          status: 'Joined'
-        },
-        updated: true
-      };
-    }
+  const effectiveStatus = getEffectiveCandidateStatus(candidate);
+  if (effectiveStatus !== candidate.status) {
+    return {
+      candidate: {
+        ...candidate,
+        status: effectiveStatus
+      },
+      updated: true
+    };
   }
 
   return { candidate, updated: false };
@@ -410,15 +406,37 @@ export const getCandidates = (): Candidate[] => {
     const { candidate: dateUpdatedCand, updated: dateUpdated } = ensureUpcomingJoiningDate(enriched);
     const { candidate: joinedCand, updated: joinedUpdated } = checkAndAutoMarkJoined(dateUpdatedCand);
     const { candidate: codeUpdatedCand, updated: codeUpdated } = ensureAccessCode(joinedCand);
-    const { candidate: scheduleUpdatedCand, updated: schedUpdated } = ensureLatestSchedule(codeUpdatedCand);
+
+    // Migrate FA-9149 / cand-twinkle-9149 to new email if old email was cached in localStorage
+    let candidateToProcess = codeUpdatedCand;
+    if (candidateToProcess.id === 'cand-twinkle-9149' || (candidateToProcess.accessCode || '').toUpperCase() === 'FA-9149') {
+      if (candidateToProcess.email !== 'twinkle.verma@fieldassist.com' || candidateToProcess.formData?.email !== 'twinkle.verma@fieldassist.com') {
+        candidateToProcess = {
+          ...candidateToProcess,
+          email: 'twinkle.verma@fieldassist.com',
+          formData: {
+            ...candidateToProcess.formData,
+            fullName: candidateToProcess.formData?.fullName || candidateToProcess.name || 'Twinkle Verma',
+            personalEmail: 'twinkle.verma@fieldassist.com',
+            email: 'twinkle.verma@fieldassist.com'
+          } as CandidateFormData
+        };
+        needsSave = true;
+      }
+    }
+
+    // Reconcile joining status live from DOJ vs today
+    const { candidate: reconciledCand, updated: reconciledUpdated } = checkAndAutoMarkJoined(candidateToProcess);
+    const { candidate: scheduleUpdatedCand, updated: schedUpdated } = ensureLatestSchedule(reconciledCand);
     const { candidate: autoUpdatedCand, updated: autoUpdated } = ensureEmailAutomationState(scheduleUpdatedCand);
-    if (dateUpdated || joinedUpdated || codeUpdated || schedUpdated || autoUpdated) needsSave = true;
+    if (dateUpdated || joinedUpdated || codeUpdated || reconciledUpdated || schedUpdated || autoUpdated) needsSave = true;
     return autoUpdatedCand;
   });
 
   if (needsSave) {
     localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(processed));
     processed.forEach(c => saveCandidateToFirestore(c).catch(err => console.warn('Background firestore sync notice:', err)));
+    processed.forEach(c => syncCandidateToGoogleSheets(c).catch(err => console.warn('Background sheets sync notice:', err)));
   }
 
   return processed;
@@ -451,19 +469,20 @@ export const setActiveCandidateId = (id: string): void => {
 };
 
 export const saveCandidate = async (candidate: Candidate, skipGoogleSheetsSync = false): Promise<void> => {
+  const { candidate: liveCandidate } = checkAndAutoMarkJoined(candidate);
   const candidates = getCandidates();
-  const index = candidates.findIndex(c => c.id === candidate.id);
+  const index = candidates.findIndex(c => c.id === liveCandidate.id);
   
   if (index >= 0) {
-    candidates[index] = candidate;
+    candidates[index] = liveCandidate;
   } else {
-    candidates.push(candidate);
+    candidates.push(liveCandidate);
   }
   
   localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(candidates));
   
   try {
-    await saveCandidateToFirestore(candidate);
+    await saveCandidateToFirestore(liveCandidate);
   } catch (err) {
     console.error('[saveCandidate] Firestore persist failed:', err);
     throw err;
@@ -471,7 +490,7 @@ export const saveCandidate = async (candidate: Candidate, skipGoogleSheetsSync =
 
   // Background Google Sheets Synchronization only if not explicitly skipped
   if (!skipGoogleSheetsSync) {
-    syncCandidateToGoogleSheets(candidate).catch(err => {
+    syncCandidateToGoogleSheets(liveCandidate).catch(err => {
       console.warn('[Google Sheets Sync] Background sync skipped/notice:', err?.message || err);
     });
   }
@@ -518,6 +537,7 @@ export const syncCandidatesWithFirestore = async (): Promise<Candidate[]> => {
     localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(processed));
     if (needsRemoteUpdate) {
       processed.forEach(c => saveCandidateToFirestore(c).catch(err => console.warn('Background sync update notice:', err)));
+      processed.forEach(c => syncCandidateToGoogleSheets(c).catch(err => console.warn('Background sheets update notice:', err)));
     }
     return processed;
   }
@@ -867,10 +887,10 @@ export interface CandidateCoreDetailsUpdate {
   status?: Candidate['status'];
 }
 
-export const updateCandidateCoreDetails = (
+export const updateCandidateCoreDetails = async (
   candidateId: string,
   updates: CandidateCoreDetailsUpdate
-): Candidate => {
+): Promise<Candidate> => {
   const candidate = getCandidateById(candidateId);
   if (!candidate) throw new Error(`Candidate with ID ${candidateId} not found`);
 
@@ -902,6 +922,38 @@ export const updateCandidateCoreDetails = (
     return m;
   });
 
+  const newJoiningDate = updates.joiningDate?.trim().split('T')[0] || candidate.joiningDate;
+
+  // Derive live status strictly based on current DOJ vs today's date
+  const todayStr = getTodayDateString();
+  const isFutureDOJ = Boolean(newJoiningDate && newJoiningDate > todayStr);
+
+  let targetStatus: Candidate['status'];
+  if (isFutureDOJ) {
+    // Future joining date: Candidate CANNOT have status 'Joined' or 'Onboarding Complete'!
+    if (updates.status && updates.status !== 'Joined' && updates.status !== 'Onboarding Complete') {
+      targetStatus = updates.status;
+    } else if (candidate.status && candidate.status !== 'Joined' && candidate.status !== 'Onboarding Complete') {
+      targetStatus = candidate.status;
+    } else {
+      targetStatus = derivePreJoiningStatus({
+        ...candidate,
+        status: undefined,
+        joiningDate: newJoiningDate
+      });
+    }
+  } else {
+    // Joining date is today or in the past: Candidate has officially joined!
+    const s = (updates.status || candidate.status || '').toLowerCase();
+    if (s.includes('cancel') || s.includes('reject') || s.includes('inactive')) {
+      targetStatus = updates.status || candidate.status;
+    } else if (updates.status === 'Onboarding Complete' || candidate.status === 'Onboarding Complete') {
+      targetStatus = 'Onboarding Complete';
+    } else {
+      targetStatus = 'Joined';
+    }
+  }
+
   const updatedCandidate: Candidate = {
     ...candidate,
     name: updates.name.trim(),
@@ -909,7 +961,7 @@ export const updateCandidateCoreDetails = (
     phone: updates.phone.trim(),
     role: updates.role.trim(),
     department: updates.department,
-    joiningDate: updates.joiningDate,
+    joiningDate: newJoiningDate,
     workMode,
     locationId: isRemote ? undefined : (loc?.id || updates.locationId),
     officeCity: city,
@@ -928,10 +980,11 @@ export const updateCandidateCoreDetails = (
     reportingManager: updates.reportingManager || candidate.reportingManager || 'Department Manager',
     reportingManagerRole: updates.reportingManagerRole || candidate.reportingManagerRole || 'Reporting Lead',
     hrbp: assignedHrbp,
-    status: updates.status || candidate.status,
+    status: targetStatus,
     notes: updates.notes !== undefined ? updates.notes : candidate.notes,
     formData: {
       ...candidate.formData,
+      joiningDate: newJoiningDate,
       fullName: (!candidate.formData.fullName || candidate.formData.fullName === candidate.name) ? updates.name.trim() : candidate.formData.fullName,
       email: (!candidate.formData.email || candidate.formData.email === candidate.email) ? updates.email.trim() : candidate.formData.email,
       phone: (!candidate.formData.phone || candidate.formData.phone === candidate.phone) ? updates.phone.trim() : candidate.formData.phone
@@ -939,11 +992,17 @@ export const updateCandidateCoreDetails = (
     milestones: updatedMilestones
   };
 
-  // Recalculate email automation stages (welcome_7d, culture_5d, comm_3d, day1_1d) based on new joining date
-  const { candidate: withAutomation } = ensureEmailAutomationState(updatedCandidate);
+  // Reconcile status through live helper to guarantee consistency
+  const { candidate: reconciledCandidate } = checkAndAutoMarkJoined({
+    ...updatedCandidate,
+    status: targetStatus
+  });
 
-  // Save to localStorage, update Firestore, and background sync to Google Sheets
-  saveCandidate(withAutomation);
+  // Recalculate email automation stages (welcome_7d, culture_5d, comm_3d, day1_1d) based on new joining date
+  const { candidate: withAutomation } = ensureEmailAutomationState(reconciledCandidate);
+
+  // Save to localStorage, update Firestore, and trigger background sync to Google Sheets
+  await saveCandidate(withAutomation);
 
   // Sync candidate list with backend email server
   if (typeof fetch !== 'undefined') {
@@ -991,7 +1050,7 @@ export const submitHRQuery = (query: Omit<HRQuery, 'id' | 'createdAt' | 'status'
   const newQuery: HRQuery = {
     ...query,
     recipientName: 'Twinkle Verma',
-    recipientEmail: 'twinkle.verma@flick2know.com',
+    recipientEmail: 'twinkle.verma@fieldassist.com',
     id: `query-${Date.now()}`,
     createdAt: new Date().toISOString(),
     status: 'Open'

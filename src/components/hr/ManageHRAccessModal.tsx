@@ -162,7 +162,7 @@ export const ManageHRAccessModal: React.FC<ManageHRAccessModalProps> = ({
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="e.g. hr.colleague@flick2know.com"
+                  placeholder="e.g. hr.colleague@fieldassist.com"
                   disabled={isSubmitting}
                   className="w-full text-sm px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600/30 focus:border-purple-600 transition font-medium"
                 />

@@ -7,7 +7,7 @@ import { Candidate, DressCodeType, JoiningLocation, WorkMode } from '../../types
 import { getHRBPForDepartment, LIST_OF_OFFICIAL_HRBPS, DEPARTMENT_OPTIONS, OFFICIAL_HRBPS } from '../../utils/hrbp';
 import { toTitleCase } from '../../utils/textUtils';
 import { CandidateCoreDetailsUpdate } from '../../services/candidateStorage';
-import { formatJoiningDate } from '../../utils/dateUtils';
+import { formatJoiningDate, getTodayDateString, getEffectiveCandidateStatus, derivePreJoiningStatus } from '../../utils/dateUtils';
 
 interface EditCandidateModalProps {
   isOpen: boolean;
@@ -92,7 +92,9 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
       setLunchInfo(candidate.lunchInfo || '');
       setReportingManager(candidate.reportingManager || '');
       setReportingManagerRole(candidate.reportingManagerRole || '');
-      setStatus(candidate.status);
+      // Initialize status using live derivation from current DOJ vs today
+      const effectiveInitialStatus = getEffectiveCandidateStatus(candidate);
+      setStatus(effectiveInitialStatus);
       setNotes(candidate.notes || '');
 
       const hrbp = candidate.hrbp || getHRBPForDepartment(candidate.department);
@@ -176,6 +178,23 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
       avatarUrl: hrbpAvatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
     };
 
+    const todayStr = getTodayDateString();
+    let finalStatus = status;
+    if (joiningDate) {
+      if (joiningDate > todayStr) {
+        // Future joining date: Candidate cannot be Joined or Onboarding Complete
+        if (finalStatus === 'Joined' || finalStatus === 'Onboarding Complete') {
+          finalStatus = derivePreJoiningStatus({ ...candidate, status: undefined, joiningDate });
+        }
+      } else {
+        // Joining date is today or past: Candidate has joined!
+        const s = (finalStatus || '').toLowerCase();
+        if (!s.includes('cancel') && !s.includes('reject') && finalStatus !== 'Onboarding Complete') {
+          finalStatus = 'Joined';
+        }
+      }
+    }
+
     const updates: CandidateCoreDetailsUpdate = {
       name: toTitleCase(name.trim()),
       email: email.trim(),
@@ -187,7 +206,7 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
       reportingManager: reportingManager.trim() || 'Department Manager',
       reportingManagerRole: reportingManagerRole.trim() || 'Reporting Lead',
       hrbp: assignedHrbp,
-      status,
+      status: finalStatus,
       notes,
       ...(workMode === 'Remote'
         ? {
@@ -369,7 +388,22 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
                   type="date"
                   required
                   value={joiningDate}
-                  onChange={(e) => setJoiningDate(e.target.value)}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setJoiningDate(newDate);
+                    const todayStr = getTodayDateString();
+                    if (newDate) {
+                      if (newDate > todayStr) {
+                        if (status === 'Joined' || status === 'Onboarding Complete') {
+                          setStatus(derivePreJoiningStatus({ ...candidate, status: undefined, joiningDate: newDate }));
+                        }
+                      } else {
+                        if (status !== 'Onboarding Complete' && !status.toLowerCase().includes('cancel')) {
+                          setStatus('Joined');
+                        }
+                      }
+                    }
+                  }}
                   className="w-full px-3 py-2 text-xs border border-purple-300 rounded-lg focus:outline-none focus:border-purple-600 font-bold bg-purple-50/40 text-purple-950 cursor-pointer"
                 />
               </div>
@@ -699,21 +733,43 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
           {/* Section 5: Status & Internal Notes */}
           <div className="border-t border-slate-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Onboarding Status
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-600">
+                  Onboarding Status
+                </label>
+                <span className={`text-[10px] font-bold ${joiningDate > getTodayDateString() ? 'text-indigo-600' : 'text-emerald-700'}`}>
+                  {joiningDate > getTodayDateString() ? '• Pre-joining status' : '• Joined status'}
+                </span>
+              </div>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as Candidate['status'])}
+                onChange={(e) => {
+                  const chosen = e.target.value as Candidate['status'];
+                  const todayStr = getTodayDateString();
+                  if (joiningDate > todayStr && (chosen === 'Joined' || chosen === 'Onboarding Complete')) {
+                    setStatus(derivePreJoiningStatus({ ...candidate, status: undefined, joiningDate }));
+                  } else {
+                    setStatus(chosen);
+                  }
+                }}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none font-bold text-slate-900 bg-white cursor-pointer"
               >
                 <option value="Offer Accepted">Offer Accepted</option>
                 <option value="Form Pending">Form Pending</option>
                 <option value="Under Review">Under Review</option>
                 <option value="Ready for Day 1">Ready for Day 1</option>
-                <option value="Joined">Joined</option>
-                <option value="Onboarding Complete">Onboarding Complete</option>
+                {joiningDate <= getTodayDateString() && (
+                  <>
+                    <option value="Joined">Joined (On/after Day 1)</option>
+                    <option value="Onboarding Complete">Onboarding Complete</option>
+                  </>
+                )}
               </select>
+              {joiningDate > getTodayDateString() && (
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Candidate joins on {formatJoiningDate(joiningDate)}. Joined status activates automatically when Day 1 commences.
+                </p>
+              )}
             </div>
 
             <div>

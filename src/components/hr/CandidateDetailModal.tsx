@@ -9,7 +9,7 @@ import { DEFAULT_FIELDASSIST_SCHEDULE } from '../../services/mockData';
 import { EmailAutomationSection } from './EmailAutomationSection';
 import { getCandidateById, saveCandidate } from '../../services/candidateStorage';
 import { LIST_OF_OFFICIAL_HRBPS, getHRBPForDepartment } from '../../utils/hrbp';
-import { formatJoiningDate } from '../../utils/dateUtils';
+import { formatJoiningDate, getEffectiveCandidateStatus, getTodayDateString } from '../../utils/dateUtils';
 import { CandidateAvatar } from '../CandidateAvatar';
 import { toTitleCase } from '../../utils/textUtils';
 
@@ -201,7 +201,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               <span className="text-xs font-bold text-slate-500 block">Current Onboarding Status</span>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs font-bold text-purple-900 bg-white px-3 py-1 rounded-lg border border-purple-200">
-                  {candidate.status}
+                  {getEffectiveCandidateStatus(candidate)}
                 </span>
                 <span className="text-xs font-medium text-slate-500">
                   Form: <strong className="text-purple-700">{candidate.formStatus} ({candidate.formData.completionPercentage}%)</strong>
@@ -211,7 +211,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <select
-                value={candidate.status}
+                value={getEffectiveCandidateStatus(candidate)}
                 onChange={(e) => onUpdateStatus(candidate.id, e.target.value as OnboardingStatus)}
                 className="text-xs bg-white border border-purple-300 text-purple-900 font-bold rounded-lg px-3 py-2 focus:outline-none cursor-pointer"
               >
@@ -219,8 +219,12 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                 <option value="Form Pending">Form Pending</option>
                 <option value="Under Review">Under Review</option>
                 <option value="Ready for Day 1">Ready for Day 1</option>
-                <option value="Joined">Joined</option>
-                <option value="Onboarding Complete">Onboarding Complete</option>
+                {Boolean(candidate.joiningDate && candidate.joiningDate <= getTodayDateString()) && (
+                  <>
+                    <option value="Joined">Joined</option>
+                    <option value="Onboarding Complete">Onboarding Complete</option>
+                  </>
+                )}
               </select>
 
               <button

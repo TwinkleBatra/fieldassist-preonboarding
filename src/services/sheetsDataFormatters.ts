@@ -1,4 +1,5 @@
 import { Candidate, CandidateFormData, RequiredDocument } from '../types';
+import { getEffectiveCandidateStatus } from '../utils/dateUtils';
 
 export const SHEET_NAMES = {
   CANDIDATE_MASTER: 'Candidate Master',
@@ -100,7 +101,7 @@ export function formatCandidateMasterRow(c: Candidate): string[] {
       ? 50
       : 0)
   }%`;
-  const candidateStatus = c.status || 'Offer Accepted';
+  const candidateStatus = getEffectiveCandidateStatus(c);
 
   const totalExp =
     fd.totalWorkExperience ||
@@ -320,7 +321,7 @@ export function formatCandidateMasterMap(c: Candidate): Record<string, any> {
       ? 50
       : 0)
   }%`;
-  const candidateStatus = c.status || 'Offer Accepted';
+  const candidateStatus = getEffectiveCandidateStatus(c);
 
   const totalExp =
     fd.totalWorkExperience ||
