@@ -595,6 +595,15 @@ export default function App() {
                             aria-label="Form In Progress"
                           />
                         )}
+                        {tab.id === 'form' && (activeCandidate.formData?.completionPercentage ?? 0) < 100 && (
+                          <span
+                            className="animate-hand-point text-xs select-none shrink-0 filter drop-shadow-xs"
+                            title="Action Required: Please complete your pre-onboarding form"
+                            aria-label="Action required: complete form"
+                          >
+                            👉
+                          </span>
+                        )}
                       </button>
                     );
                   })}

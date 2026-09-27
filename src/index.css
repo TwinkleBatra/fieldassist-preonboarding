@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@keyframes handPointNudge {
+  0%, 100% {
+    transform: translateX(0) scale(1);
+  }
+  50% {
+    transform: translateX(4px) scale(1.18);
+  }
+}
+
+.animate-hand-point {
+  animation: handPointNudge 1.1s ease-in-out infinite;
+  display: inline-flex;
+}
