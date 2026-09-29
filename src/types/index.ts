@@ -123,6 +123,8 @@ export interface JoiningLocation {
   officeAddress: string;
   reportingTime: string; // e.g. "09:30 AM"
   timeZone: string; // e.g. "IST (UTC+5:30)", "BST (UTC+1:00)", "SGT (UTC+8:00)"
+  ianaTimeZone?: string; // IANA time zone identifier, e.g. "Asia/Kolkata", "Asia/Dubai"
+  region?: 'India' | 'Africa' | 'Middle East' | 'Asia-Pacific' | 'Latin America';
   googleMapsUrl?: string;
   dressCode: DressCodeType | string;
   lunchInfo: string;
@@ -198,6 +200,8 @@ export interface Candidate {
   officeCity: string;
   officeCountry?: string;
   timeZone?: string;
+  ianaTimeZone?: string;
+  region?: 'India' | 'Africa' | 'Middle East' | 'Asia-Pacific' | 'Latin America';
   googleMapsUrl?: string;
   dressCode: DressCodeType | string;
   lunchInfo: string;

@@ -855,6 +855,8 @@ export const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'for
     officeAddress: isRemote ? `Remote / Work From Home (${city}, ${country})` : (loc?.officeAddress || newCandidateData.officeAddress),
     reportingTime: isRemote ? (newCandidateData.reportingTime || '11:00 AM') : (loc?.reportingTime || newCandidateData.reportingTime || '11:00 AM'),
     timeZone: timeZone,
+    ianaTimeZone: newCandidateData.ianaTimeZone || loc?.ianaTimeZone || 'Asia/Kolkata',
+    region: newCandidateData.region || loc?.region || 'India',
     googleMapsUrl: isRemote ? undefined : (loc?.googleMapsUrl || newCandidateData.googleMapsUrl),
     dressCode: isRemote ? 'Smart Casuals' : (loc?.dressCode || newCandidateData.dressCode || 'Smart Casuals'),
     lunchInfo: isRemote ? '' : (loc?.lunchInfo || newCandidateData.lunchInfo || 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.'),
@@ -919,6 +921,8 @@ export interface CandidateCoreDetailsUpdate {
   officeAddress?: string;
   reportingTime?: string;
   timeZone?: string;
+  ianaTimeZone?: string;
+  region?: 'India' | 'Africa' | 'Middle East' | 'Asia-Pacific' | 'Latin America';
   remoteCountry?: string;
   remoteCity?: string;
   remoteTimeZone?: string;
@@ -1013,6 +1017,8 @@ export const updateCandidateCoreDetails = async (
     officeAddress: isRemote ? `Remote / Work From Home (${city}, ${country})` : (loc?.officeAddress || updates.officeAddress || candidate.officeAddress),
     reportingTime: updates.reportingTime || (isRemote ? '11:00 AM' : (loc?.reportingTime || candidate.reportingTime || '11:00 AM')),
     timeZone: timeZone,
+    ianaTimeZone: updates.ianaTimeZone || loc?.ianaTimeZone || candidate.ianaTimeZone || 'Asia/Kolkata',
+    region: updates.region || loc?.region || candidate.region || 'India',
     googleMapsUrl: isRemote ? undefined : (loc?.googleMapsUrl || updates.googleMapsUrl || candidate.googleMapsUrl),
     dressCode: isRemote ? 'Smart Casuals' : (updates.dressCode || loc?.dressCode || candidate.dressCode || 'Smart Casuals'),
     lunchInfo: isRemote ? '' : (updates.lunchInfo || loc?.lunchInfo || candidate.lunchInfo || 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.'),
