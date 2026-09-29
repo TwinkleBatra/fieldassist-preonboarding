@@ -1,5 +1,5 @@
 import { Candidate, FAQItem, HRQuery, RequiredDocument, CandidateFormData, JoiningLocation, FirstDayScheduleItem, EmailStageKey, EmailStageLog } from '../types';
-import { INITIAL_CANDIDATES, INITIAL_FAQS, INITIAL_LOCATIONS, DEFAULT_FIELDASSIST_SCHEDULE } from './mockData';
+import { INITIAL_CANDIDATES, INITIAL_FAQS, INITIAL_LOCATIONS, DEFAULT_FIELDASSIST_SCHEDULE, DEFAULT_REMOTE_SCHEDULE } from './mockData';
 import { saveCandidateToFirestore, fetchCandidatesFromFirestore, deleteCandidateFromFirestore, auth } from '../lib/firebase';
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from './emailTemplates';
 import { getHRBPForDepartment } from '../utils/hrbp';
@@ -125,11 +125,39 @@ export const ensureAccessCode = (candidate: Candidate): { candidate: Candidate; 
 };
 
 export const ensureLatestSchedule = (candidate: Candidate): { candidate: Candidate; updated: boolean } => {
+  const isRemote = candidate.workMode === 'Remote';
+
   if (!candidate.schedule || candidate.schedule.length === 0) {
     return {
-      candidate: { ...candidate, schedule: DEFAULT_FIELDASSIST_SCHEDULE },
+      candidate: { ...candidate, schedule: isRemote ? DEFAULT_REMOTE_SCHEDULE : DEFAULT_FIELDASSIST_SCHEDULE },
       updated: true
     };
+  }
+
+  // If candidate is Remote, ensure NO lunch items exist in schedule and match Remote timeline
+  if (isRemote) {
+    const hasLunchInSchedule = candidate.schedule.some(item => 
+      item.title.toLowerCase().includes('lunch') || 
+      item.description.toLowerCase().includes('lunch')
+    );
+    const hasOfficeSpecificSchedule = candidate.schedule.some(item =>
+      item.title === 'Arrival & Welcome' ||
+      item.title === 'Welcome Lunch' ||
+      item.title === 'Office Tour' ||
+      item.location === 'Reception' ||
+      item.location === 'Cafeteria'
+    );
+
+    if (hasLunchInSchedule || hasOfficeSpecificSchedule) {
+      return {
+        candidate: {
+          ...candidate,
+          reportingTime: '11:00 AM',
+          schedule: DEFAULT_REMOTE_SCHEDULE
+        },
+        updated: true
+      };
+    }
   }
 
   // If schedule starts with old 10:30 AM time or has outdated titles, upgrade to the 11:00 AM - 4:00 PM schedule
@@ -147,7 +175,7 @@ export const ensureLatestSchedule = (candidate: Candidate): { candidate: Candida
       candidate: {
         ...candidate,
         reportingTime: candidate.reportingTime === '10:30 AM' ? '11:00 AM' : candidate.reportingTime,
-        schedule: DEFAULT_FIELDASSIST_SCHEDULE
+        schedule: isRemote ? DEFAULT_REMOTE_SCHEDULE : DEFAULT_FIELDASSIST_SCHEDULE
       },
       updated: true
     };
@@ -165,8 +193,17 @@ export const ensureUpcomingJoiningDate = (candidate: Candidate): { candidate: Ca
     updated = true;
   }
 
-  if (newCand.lunchInfo && (newCand.lunchInfo.includes('espresso') || newCand.lunchInfo.includes('coffee'))) {
-    newCand.lunchInfo = 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.';
+  if (newCand.workMode === 'Remote') {
+    if (newCand.lunchInfo) {
+      newCand.lunchInfo = '';
+      updated = true;
+    }
+    if (newCand.schedule && newCand.schedule.some(i => i.title.toLowerCase().includes('lunch') || i.description.toLowerCase().includes('lunch'))) {
+      newCand.schedule = DEFAULT_REMOTE_SCHEDULE;
+      updated = true;
+    }
+  } else if (newCand.lunchInfo && (newCand.lunchInfo.includes('espresso') || newCand.lunchInfo.includes('coffee') || newCand.lunchInfo.includes('buffet') || newCand.lunchInfo.includes('with your team members'))) {
+    newCand.lunchInfo = 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.';
     updated = true;
   }
 
@@ -333,6 +370,11 @@ export const enrichCandidateWithLocation = (candidate: Candidate, locations: Joi
     const timeZone = candidate.remoteTimeZone || candidate.timeZone || 'IST (UTC+5:30)';
     const instructions = candidate.remoteInstructions || candidate.firstDayInstructions || 'On Day 1, join the Google Meet welcome link sent by your HR Partner.';
 
+    let cleanedSchedule = candidate.schedule;
+    if (!cleanedSchedule || cleanedSchedule.length === 0 || cleanedSchedule.some(i => i.title.toLowerCase().includes('lunch') || i.title === 'Welcome Lunch')) {
+      cleanedSchedule = DEFAULT_REMOTE_SCHEDULE;
+    }
+
     return {
       ...candidate,
       workMode: 'Remote',
@@ -343,6 +385,8 @@ export const enrichCandidateWithLocation = (candidate: Candidate, locations: Joi
         ? candidate.officeAddress
         : `Remote / Work From Home (${city}, ${country})`,
       firstDayInstructions: instructions,
+      lunchInfo: '',
+      schedule: cleanedSchedule,
       remoteCity: city,
       remoteCountry: country,
       remoteTimeZone: timeZone,
@@ -809,11 +853,11 @@ export const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'for
     officeCity: city,
     officeCountry: country,
     officeAddress: isRemote ? `Remote / Work From Home (${city}, ${country})` : (loc?.officeAddress || newCandidateData.officeAddress),
-    reportingTime: isRemote ? (newCandidateData.reportingTime || '10:30 AM') : (loc?.reportingTime || newCandidateData.reportingTime || '10:30 AM'),
+    reportingTime: isRemote ? (newCandidateData.reportingTime || '11:00 AM') : (loc?.reportingTime || newCandidateData.reportingTime || '11:00 AM'),
     timeZone: timeZone,
     googleMapsUrl: isRemote ? undefined : (loc?.googleMapsUrl || newCandidateData.googleMapsUrl),
     dressCode: isRemote ? 'Smart Casuals' : (loc?.dressCode || newCandidateData.dressCode || 'Smart Casuals'),
-    lunchInfo: isRemote ? 'Remote food delivery allowance provided for Day 1' : (loc?.lunchInfo || newCandidateData.lunchInfo || 'In-house cafeteria with complimentary lunch'),
+    lunchInfo: isRemote ? '' : (loc?.lunchInfo || newCandidateData.lunchInfo || 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.'),
     firstDayInstructions: instructions,
     remoteCountry: isRemote ? country : undefined,
     remoteCity: isRemote ? city : undefined,
@@ -850,7 +894,7 @@ export const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'for
       { id: 'm-5', title: 'Welcome Kit & Swag Box', description: 'Kit shipping', status: 'Pending' },
       { id: 'm-6', title: isRemote ? 'Day 1 Virtual Orientation' : 'Day 1 Orientation', description: isRemote ? 'Google Meet Welcome Room' : `Reporting at ${city}`, status: 'Pending', date: newCandidateData.joiningDate }
     ],
-    schedule: loc?.defaultSchedule || DEFAULT_FIELDASSIST_SCHEDULE
+    schedule: isRemote ? DEFAULT_REMOTE_SCHEDULE : (loc?.defaultSchedule || DEFAULT_FIELDASSIST_SCHEDULE)
   };
 
   const { candidate: withAutomation } = ensureEmailAutomationState(fullCandidate);
@@ -967,11 +1011,14 @@ export const updateCandidateCoreDetails = async (
     officeCity: city,
     officeCountry: country,
     officeAddress: isRemote ? `Remote / Work From Home (${city}, ${country})` : (loc?.officeAddress || updates.officeAddress || candidate.officeAddress),
-    reportingTime: updates.reportingTime || loc?.reportingTime || candidate.reportingTime || '10:30 AM',
+    reportingTime: updates.reportingTime || (isRemote ? '11:00 AM' : (loc?.reportingTime || candidate.reportingTime || '11:00 AM')),
     timeZone: timeZone,
     googleMapsUrl: isRemote ? undefined : (loc?.googleMapsUrl || updates.googleMapsUrl || candidate.googleMapsUrl),
     dressCode: isRemote ? 'Smart Casuals' : (updates.dressCode || loc?.dressCode || candidate.dressCode || 'Smart Casuals'),
-    lunchInfo: isRemote ? 'Remote food delivery allowance provided for Day 1' : (updates.lunchInfo || loc?.lunchInfo || candidate.lunchInfo || 'In-house cafeteria with complimentary lunch'),
+    lunchInfo: isRemote ? '' : (updates.lunchInfo || loc?.lunchInfo || candidate.lunchInfo || 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.'),
+    schedule: isRemote && (candidate.schedule?.some(i => i.title.toLowerCase().includes('lunch') || i.title === 'Welcome Lunch' || i.title === 'Arrival & Welcome') || !candidate.schedule?.length)
+      ? DEFAULT_REMOTE_SCHEDULE
+      : (candidate.schedule || (isRemote ? DEFAULT_REMOTE_SCHEDULE : DEFAULT_FIELDASSIST_SCHEDULE)),
     firstDayInstructions: instructions,
     remoteCountry: isRemote ? country : undefined,
     remoteCity: isRemote ? city : undefined,

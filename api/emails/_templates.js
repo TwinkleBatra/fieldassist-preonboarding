@@ -325,22 +325,42 @@ ${FOOTER_TEXT}`;
   } else if (stageKey === 'day1_1d') {
     subject = 'Tomorrow’s the Day! Here’s Everything You Need for Day 1 🚀';
     
-    const scheduleItems = candidate.schedule || [];
+    let scheduleItems = candidate.schedule || [];
+    if (isRemote) {
+      scheduleItems = scheduleItems.filter(item => 
+        !item.title.toLowerCase().includes('lunch') && 
+        !item.description.toLowerCase().includes('lunch') &&
+        item.location !== 'Cafeteria'
+      );
+    }
+
+    const defaultRemoteScheduleText = `• 11:00 AM — Join the Call (Join the welcome call using the link in your email)\n• 11:50 AM — Laptop & IT Setup (Get your IT access and setup help. Your laptop is couriered before your joining date.)\n• 01:15 PM — HR Induction (Introduction to FieldAssist, culture, policies, benefits and important HR information.)\n• 03:00 PM — Buddy Meet (Meet your onboarding buddy and get familiar with the team.)\n• 04:30 PM — Pre-Onboarding Formalities (Complete remaining joining formalities and required documentation.)`;
+    const defaultOfficeScheduleText = `• 11:00 AM — Arrival & Welcome\n• 11:20 AM — Laptop & Welcome Kit\n• 11:50 AM — HR Induction (Get familiar with FieldAssist, our culture & policies)\n• 01:15 PM — Welcome Lunch (Lunch with new joiners and team members)\n• 02:15 PM — Pre-Onboarding Formalities\n• 03:00 PM — Buddy Meet\n• 03:30 PM — Office Tour`;
+
     const scheduleText = scheduleItems.length > 0
       ? scheduleItems.map(item => `• ${item.time} — ${item.title} (${item.description})`).join('\n')
-      : `• 10:30 AM — Welcome & Reception\n• After that — Laptop & Welcome Kit\n• HR Induction — Get familiar with FieldAssist, our culture & policies\n• ~1:00 PM — Lunch with other new joiners\n• Post Lunch — Complete joining formalities\n• 3:00 PM — Buddy Meet-up\n• Later — Office Tour & Manager Meet (subject to manager availability)`;
+      : (isRemote ? defaultRemoteScheduleText : defaultOfficeScheduleText);
+
+    const defaultRemoteScheduleHtml = `<ul style="padding-left: 20px; line-height: 1.8; font-size: 14px;">
+          <li><strong>11:00 AM</strong> — Join the Call <span style="color: #64748b;">(Join the welcome call using the link in your email)</span></li>
+          <li><strong>11:50 AM</strong> — Laptop &amp; IT Setup <span style="color: #64748b;">(Get your IT access and setup help. Your laptop is couriered before your joining date.)</span></li>
+          <li><strong>01:15 PM</strong> — HR Induction <span style="color: #64748b;">(Introduction to FieldAssist, culture, policies, benefits and important HR information.)</span></li>
+          <li><strong>03:00 PM</strong> — Buddy Meet <span style="color: #64748b;">(Meet your onboarding buddy and get familiar with the team.)</span></li>
+          <li><strong>04:30 PM</strong> — Pre-Onboarding Formalities <span style="color: #64748b;">(Complete remaining joining formalities and required documentation.)</span></li>
+        </ul>`;
+    const defaultOfficeScheduleHtml = `<ul style="padding-left: 20px; line-height: 1.8; font-size: 14px;">
+          <li><strong>11:00 AM</strong> — Arrival &amp; Welcome</li>
+          <li><strong>11:20 AM</strong> — Laptop &amp; Welcome Kit</li>
+          <li><strong>11:50 AM</strong> — HR Induction (Get familiar with FieldAssist, our culture &amp; policies)</li>
+          <li><strong>01:15 PM</strong> — Welcome Lunch (Lunch with new joiners and team members)</li>
+          <li><strong>02:15 PM</strong> — Pre-Onboarding Formalities (Complete remaining joining formalities)</li>
+          <li><strong>03:00 PM</strong> — Buddy Meet-up</li>
+          <li><strong>03:30 PM</strong> — Office Tour</li>
+        </ul>`;
 
     const scheduleHtml = scheduleItems.length > 0
       ? `<ul style="padding-left: 20px; line-height: 1.8; font-size: 14px;">` + scheduleItems.map(item => `<li><strong>${item.time}</strong> — ${item.title} <span style="color: #64748b;">(${item.description})</span></li>`).join('') + `</ul>`
-      : `<ul style="padding-left: 20px; line-height: 1.8; font-size: 14px;">
-          <li><strong>10:30 AM</strong> — Welcome &amp; Reception</li>
-          <li><strong>After that</strong> — Laptop &amp; Welcome Kit</li>
-          <li><strong>HR Induction</strong> — Get familiar with FieldAssist, our culture &amp; policies</li>
-          <li><strong>~1:00 PM</strong> — Lunch with other new joiners</li>
-          <li><strong>Post Lunch</strong> — Complete joining formalities</li>
-          <li><strong>3:00 PM</strong> — Buddy Meet-up</li>
-          <li><strong>Later</strong> — Office Tour &amp; Manager Meet (subject to manager availability)</li>
-        </ul>`;
+      : (isRemote ? defaultRemoteScheduleHtml : defaultOfficeScheduleHtml);
 
     bodyText = `Hi ${firstName},
 

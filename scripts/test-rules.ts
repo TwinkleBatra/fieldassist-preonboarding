@@ -140,6 +140,28 @@ async function runRulesTests() {
     recordResult('Test (b)', 'Removed HR email loses access immediately (cannot read hrAdmins)', 'DENIED', 'DENIED', err?.code || err?.message);
   }
 
+  // TEST (c): Non-HR user cannot delete owner doc in hrAdmins -> DENIED
+  try {
+    const ownerAdminRef = doc(db, 'hrAdmins', 'twinkle.verma@fieldassist.com');
+    await deleteDoc(ownerAdminRef);
+    recordResult('Test (c)', 'Non-HR user cannot delete owner in hrAdmins', 'DENIED', 'ALLOWED');
+  } catch (err: any) {
+    recordResult('Test (c)', 'Non-HR user cannot delete owner in hrAdmins', 'DENIED', 'DENIED', err?.code || err?.message);
+  }
+
+  // TEST (d): Unauthenticated user cannot overwrite owner doc in hrAdmins -> DENIED
+  try {
+    const ownerAdminRef = doc(db, 'hrAdmins', 'twinkle.verma@fieldassist.com');
+    await setDoc(ownerAdminRef, {
+      email: 'twinkle.verma@fieldassist.com',
+      addedBy: 'Hacker',
+      addedAt: new Date().toISOString()
+    });
+    recordResult('Test (d)', 'Unauthenticated user cannot write owner in hrAdmins', 'DENIED', 'ALLOWED');
+  } catch (err: any) {
+    recordResult('Test (d)', 'Unauthenticated user cannot write owner in hrAdmins', 'DENIED', 'DENIED', err?.code || err?.message);
+  }
+
   console.log('\n===============================================================');
   const allPassed = results.every(r => r.passed);
   console.log(`SUMMARY: ${results.filter(r => r.passed).length}/${results.length} tests passed.`);

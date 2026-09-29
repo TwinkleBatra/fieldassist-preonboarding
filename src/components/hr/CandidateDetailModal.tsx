@@ -5,7 +5,7 @@ import {
   Download, Eye, Paperclip, FileDown, FileCheck
 } from 'lucide-react';
 import { Candidate, OnboardingStatus, RequiredDocument, JoiningLocation, FirstDayScheduleItem } from '../../types';
-import { DEFAULT_FIELDASSIST_SCHEDULE } from '../../services/mockData';
+import { DEFAULT_FIELDASSIST_SCHEDULE, DEFAULT_REMOTE_SCHEDULE } from '../../services/mockData';
 import { EmailAutomationSection } from './EmailAutomationSection';
 import { getCandidateById, saveCandidate } from '../../services/candidateStorage';
 import { LIST_OF_OFFICIAL_HRBPS, getHRBPForDepartment } from '../../utils/hrbp';
@@ -92,14 +92,13 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   };
 
   const handleResetSchedule = () => {
-    if (window.confirm("Reset schedule to standard 8-step FieldAssist agenda?")) {
-      const reset = [...DEFAULT_FIELDASSIST_SCHEDULE];
-      setScheduleItems(reset);
-      if (onUpdateSchedule && candidate) {
-        onUpdateSchedule(candidate.id, reset);
-        setScheduleSavedToast(true);
-        setTimeout(() => setScheduleSavedToast(false), 3000);
-      }
+    const isRemote = candidate?.workMode === 'Remote';
+    const reset = isRemote ? [...DEFAULT_REMOTE_SCHEDULE] : [...DEFAULT_FIELDASSIST_SCHEDULE];
+    setScheduleItems(reset);
+    if (onUpdateSchedule && candidate) {
+      onUpdateSchedule(candidate.id, reset);
+      setScheduleSavedToast(true);
+      setTimeout(() => setScheduleSavedToast(false), 3000);
     }
   };
 

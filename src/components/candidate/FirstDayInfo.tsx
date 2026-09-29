@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, Shirt, Utensils, Phone, Mail, MessageSquare, CheckSquare, ExternalLink, ShieldCheck, User, Globe, Laptop, Copy, Check, Users, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Shirt, Utensils, Phone, Mail, MessageSquare, CheckSquare, ExternalLink, ShieldCheck, User, Globe, Laptop, Copy, Check, Users, CheckCircle2, Video } from 'lucide-react';
 import { Candidate } from '../../types';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { toTitleCase } from '../../utils/textUtils';
@@ -138,24 +138,32 @@ export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenCon
           </div>
         </div>
 
-        {/* Lunch & Food Allowance */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition lg:col-span-2">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-100 shrink-0">
-              <Utensils className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                {isRemote ? 'Day 1 Meal Allowance' : 'Day 1 Lunch & Meal Allowance'}
-              </span>
-              <p className="text-sm font-bold text-slate-900 mt-1 leading-snug">
-                {isRemote 
-                  ? 'Remote food delivery allowance provided for Day 1. Day 1 virtual welcome lunch with your team members.'
-                  : 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.'}
-              </p>
+        {/* Lunch & Food Allowance (Office only - NO lunch mention for Remote) */}
+        {!isRemote && (
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition lg:col-span-2">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-100 shrink-0">
+                <Utensils className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Day 1 Lunch & Meal Allowance
+                </span>
+                <p className="text-sm font-bold text-slate-900 mt-1 leading-snug">
+                  {candidate.lunchInfo
+                    ? candidate.lunchInfo
+                        .replace(/with complimentary hot buffet lunch\./gi, '.')
+                        .replace(/with complimentary hot buffet lunch/gi, '')
+                        .replace(/complimentary hot buffet lunch\./gi, '.')
+                        .replace(/complimentary hot buffet lunch/gi, '')
+                        .replace(/lunch buffet/gi, 'lunch')
+                        .replace(/with your team members/gi, 'with fellow new joiners')
+                    : 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.'}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Contact Column: Primary HR Contact + Assigned HRBP Reference */}
         <div className="flex flex-col gap-3">
@@ -279,8 +287,20 @@ export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenCon
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="sm:hidden text-xs font-bold text-purple-800">{item.time}</span>
                   <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
-                  <span className="text-[11px] font-semibold bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-slate-400" />
+                  <span className={`text-[11px] font-semibold border px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                    item.location?.toLowerCase().includes('video') || item.location?.toLowerCase().includes('call')
+                      ? 'bg-purple-50 border-purple-200 text-purple-700'
+                      : item.location?.toLowerCase().includes('online')
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}>
+                    {item.location?.toLowerCase().includes('video') || item.location?.toLowerCase().includes('call') ? (
+                      <Video className="w-3 h-3 text-purple-600" />
+                    ) : item.location?.toLowerCase().includes('online') ? (
+                      <Laptop className="w-3 h-3 text-emerald-600" />
+                    ) : (
+                      <MapPin className="w-3 h-3 text-slate-400" />
+                    )}
                     {item.location}
                   </span>
                 </div>
@@ -357,21 +377,27 @@ export const FirstDayInfo: React.FC<FirstDayInfoProps> = ({ candidate, onOpenCon
           <div className="bg-slate-50 hover:bg-purple-50/40 p-4 rounded-xl border border-slate-200/70 hover:border-purple-200 transition text-xs flex items-start gap-3 group">
             <span className="w-6 h-6 rounded-lg bg-purple-100 group-hover:bg-purple-700 text-purple-700 group-hover:text-white font-extrabold flex items-center justify-center shrink-0 text-xs border border-purple-200 group-hover:border-purple-700 transition">2</span>
             <p className="text-slate-700 font-semibold leading-relaxed pt-0.5">
-              Check your reporting time (11:00 AM) and joining location before leaving.
+              {isRemote 
+                ? 'Check your reporting time (11:00 AM) and keep your welcome call link ready.'
+                : 'Check your reporting time (11:00 AM) and joining location before leaving.'}
             </p>
           </div>
 
           <div className="bg-slate-50 hover:bg-purple-50/40 p-4 rounded-xl border border-slate-200/70 hover:border-purple-200 transition text-xs flex items-start gap-3 group">
             <span className="w-6 h-6 rounded-lg bg-purple-100 group-hover:bg-purple-700 text-purple-700 group-hover:text-white font-extrabold flex items-center justify-center shrink-0 text-xs border border-purple-200 group-hover:border-purple-700 transition">3</span>
             <p className="text-slate-700 font-semibold leading-relaxed pt-0.5">
-              Keep your phone handy for building visitor security pass check-in and HR communication.
+              {isRemote 
+                ? 'Ensure your laptop, webcam, and internet connection are set up for Day 1 calls.'
+                : 'Keep your phone handy for building visitor security pass check-in and HR communication.'}
             </p>
           </div>
 
           <div className="bg-slate-50 hover:bg-purple-50/40 p-4 rounded-xl border border-slate-200/70 hover:border-purple-200 transition text-xs flex items-start gap-3 group">
             <span className="w-6 h-6 rounded-lg bg-purple-100 group-hover:bg-purple-700 text-purple-700 group-hover:text-white font-extrabold flex items-center justify-center shrink-0 text-xs border border-purple-200 group-hover:border-purple-700 transition">4</span>
             <p className="text-slate-700 font-semibold leading-relaxed pt-0.5">
-              Come ready to meet your team, have lunch together, and enjoy a memorable Day 1!
+              {isRemote 
+                ? 'Come ready to meet your team, connect with your onboarding buddy, and enjoy Day 1!'
+                : 'Come ready to meet your team, have lunch together, and enjoy a memorable Day 1!'}
             </p>
           </div>
         </div>

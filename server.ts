@@ -154,7 +154,7 @@ async function startServer() {
         workMode: "Office",
         accessCode: "FA-WELCOME-2026",
         dressCode: "Smart Casuals",
-        lunchInfo: "In-house cafeteria on the 1st floor with complimentary hot buffet lunch.",
+        lunchInfo: "In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.",
         status: "Ready for Day 1",
         formStatus: "Verified",
         reportingManager: "Divir Tiwari",

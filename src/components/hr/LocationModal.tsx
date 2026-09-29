@@ -57,7 +57,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: '',
     dressCode: 'Smart Casuals' as DressCodeType,
-    lunchInfo: 'Complimentary lunch buffet provided in office cafeteria',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     firstDayInstructions: 'Report to main reception desk on arrival.',
     isInternational: false,
     hrContact: {

@@ -45,6 +45,39 @@ export const DEFAULT_FIELDASSIST_SCHEDULE: FirstDayScheduleItem[] = [
   }
 ];
 
+export const DEFAULT_REMOTE_SCHEDULE: FirstDayScheduleItem[] = [
+  {
+    time: '11:00 AM',
+    title: 'Join the Call',
+    description: 'Join the welcome call using the link in your email',
+    location: 'Video Call'
+  },
+  {
+    time: '11:50 AM',
+    title: 'Laptop & IT Setup',
+    description: 'Get your IT access and setup help. Your laptop is couriered before your joining date.',
+    location: 'Video Call'
+  },
+  {
+    time: '01:15 PM',
+    title: 'HR Induction',
+    description: 'Introduction to FieldAssist, culture, policies, benefits and important HR information.',
+    location: 'Video Call'
+  },
+  {
+    time: '03:00 PM',
+    title: 'Buddy Meet',
+    description: 'Meet your onboarding buddy and get familiar with the team.',
+    location: 'Video Call'
+  },
+  {
+    time: '04:30 PM',
+    title: 'Pre-Onboarding Formalities',
+    description: 'Complete remaining joining formalities and required documentation.',
+    location: 'Online'
+  }
+];
+
 export const INITIAL_LOCATIONS: JoiningLocation[] = [
   {
     id: 'loc-gurugram',
@@ -56,7 +89,7 @@ export const INITIAL_LOCATIONS: JoiningLocation[] = [
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: 'https://maps.google.com/?q=Universal+Trade+Tower+Sector+49+Gurugram',
     dressCode: 'Smart Casuals',
-    lunchInfo: 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     hrContact: {
       name: 'Megha Rastogi',
       role: 'Senior HR Business Partner',
@@ -78,7 +111,7 @@ export const INITIAL_LOCATIONS: JoiningLocation[] = [
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: 'https://maps.google.com/?q=91+Springboard+Residency+Road+Bengaluru',
     dressCode: 'Smart Casuals',
-    lunchInfo: 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     hrContact: {
       name: 'Anand Kulkarni',
       role: 'Lead HR Operations - South',
@@ -100,7 +133,7 @@ export const INITIAL_LOCATIONS: JoiningLocation[] = [
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: 'https://maps.google.com/?q=The+Summit+Business+Bay+Andheri+East+Mumbai',
     dressCode: 'Business Casuals',
-    lunchInfo: 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     hrContact: {
       name: 'Pooja Kapoor',
       role: 'HR Business Partner - Sales Regional',
@@ -137,7 +170,7 @@ export const INITIAL_FAQS: FAQItem[] = [
     id: 'faq-4',
     category: 'Culture & Perks',
     question: 'Is lunch provided at the office?',
-    answer: 'Yes! FieldAssist offers complimentary catered lunch or dining vouchers across all global locations, along with coffee, teas, and healthy snacks.'
+    answer: 'Yes! FieldAssist offers in-house cafeteria facilities across our physical office locations. For Remote joiners, onboarding sessions and team connects are conducted virtually.'
   },
   {
     id: 'faq-5',
@@ -172,7 +205,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: 'https://maps.google.com/?q=Universal+Trade+Tower+Sector+49+Gurugram',
     dressCode: 'Smart Casuals',
-    lunchInfo: 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     firstDayInstructions: 'Security check-in at 1st Floor Universal Trade Tower reception. Welcome to FieldAssist!',
     reportingManager: '',
     reportingManagerRole: '',
@@ -247,7 +280,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: 'https://maps.google.com/?q=Universal+Trade+Tower+Sector+49+Gurugram',
     dressCode: 'Smart Casuals',
-    lunchInfo: 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     firstDayInstructions: 'Security check-in at 1st Floor Universal Trade Tower reception. Welcome to FieldAssist!',
     reportingManager: '',
     reportingManagerRole: '',
@@ -322,7 +355,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: 'https://maps.google.com/?q=Universal+Trade+Tower+Sector+49+Gurugram',
     dressCode: 'Smart Casuals',
-    lunchInfo: 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     firstDayInstructions: 'Security check-in at 1st Floor Universal Trade Tower reception. Welcome to FieldAssist!',
     reportingManager: '',
     reportingManagerRole: '',
@@ -397,7 +430,7 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     timeZone: 'IST (UTC+5:30)',
     googleMapsUrl: 'https://maps.google.com/?q=Universal+Trade+Tower+Sector+49+Gurugram',
     dressCode: 'Smart Casuals',
-    lunchInfo: 'In-house cafeteria on the 1st floor with complimentary hot buffet lunch. Day 1 welcome lunch with your team members.',
+    lunchInfo: 'In-house cafeteria on the 1st floor. Day 1 welcome lunch with fellow new joiners.',
     firstDayInstructions: 'Security check-in at 1st Floor Universal Trade Tower reception. Welcome to FieldAssist!',
     reportingManager: '',
     reportingManagerRole: '',

@@ -218,9 +218,9 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
             officeCountry: remoteCountry,
             timeZone: remoteTimeZone,
             officeAddress: `Remote / Work From Home (${remoteCity}, ${remoteCountry})`,
-            reportingTime: reportingTime || '10:30 AM',
+            reportingTime: reportingTime || '11:00 AM',
             dressCode: 'Smart Casuals' as DressCodeType,
-            lunchInfo: 'Remote food delivery allowance provided for Day 1'
+            lunchInfo: ''
           }
         : {
             locationId: selectedLocationId,

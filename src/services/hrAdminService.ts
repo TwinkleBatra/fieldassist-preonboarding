@@ -3,7 +3,7 @@ import { db, auth, signOut } from '../lib/firebase';
 import { User } from 'firebase/auth';
 
 export const OWNER_EMAIL = 'twinkle.verma@fieldassist.com';
-export const OWNER_EMAILS = ['twinkle.verma@fieldassist.com', 'twinkle.verma@flick2know.com'];
+export const OWNER_EMAILS = ['twinkle.verma@fieldassist.com'];
 
 export interface HRAdminDoc {
   email: string;

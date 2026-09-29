@@ -553,7 +553,7 @@ export default function App() {
                       elementId: 'tab-pre-onboarding-form',
                       label: 'Pre-Onboarding Form',
                       icon: ClipboardList,
-                      hasBadge: activeCandidate.formData.completionPercentage < 100,
+                      hasBadge: (activeCandidate.formData?.completionPercentage ?? 0) < 100 && activeCandidate.formStatus !== 'Completed' && activeCandidate.formStatus !== 'Verified',
                     },
                     {
                       id: 'tracker' as const,
@@ -595,7 +595,7 @@ export default function App() {
                             aria-label="Form In Progress"
                           />
                         )}
-                        {tab.id === 'form' && (activeCandidate.formData?.completionPercentage ?? 0) < 100 && (
+                        {tab.id === 'form' && (activeCandidate.formData?.completionPercentage ?? 0) < 100 && activeCandidate.formStatus !== 'Completed' && activeCandidate.formStatus !== 'Verified' && (
                           <span
                             className="animate-hand-point text-xs select-none shrink-0 filter drop-shadow-xs"
                             title="Action Required: Please complete your pre-onboarding form"
