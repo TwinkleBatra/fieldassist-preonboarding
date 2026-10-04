@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ override: true });
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -124,10 +125,27 @@ async function startServer() {
     });
   });
 
-  // POST /api/emails/verify-smtp - Verify SMTP connection and credentials
+  // GET /api/emails/verify-smtp - Verify SMTP connection and credentials
   app.get("/api/emails/verify-smtp", async (req, res) => {
     const result = await verifySmtpConnection();
     res.json(result);
+  });
+
+  // POST /api/emails/update-smtp - Update and test SMTP credentials
+  app.post("/api/emails/update-smtp", async (req, res) => {
+    try {
+      const { smtpUser, smtpPass, smtpHost, smtpPort, emailFrom } = req.body;
+      if (smtpUser) process.env.SMTP_USER = smtpUser.trim();
+      if (smtpPass) process.env.SMTP_PASS = smtpPass.trim().replace(/\s+/g, '');
+      if (smtpHost) process.env.SMTP_HOST = smtpHost.trim();
+      if (smtpPort) process.env.SMTP_PORT = String(smtpPort);
+      if (emailFrom) process.env.EMAIL_FROM = emailFrom.trim();
+
+      const result = await verifySmtpConnection();
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err?.message || 'Failed to update SMTP' });
+    }
   });
 
   // POST /api/emails/send-test - Send a test email directly to any address (e.g. twinkle.verma@fieldassist.com)
