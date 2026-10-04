@@ -3,7 +3,10 @@ import { db, auth, signOut } from '../lib/firebase';
 import { User } from 'firebase/auth';
 
 export const OWNER_EMAIL = 'twinkle.verma@fieldassist.com';
-export const OWNER_EMAILS = ['twinkle.verma@fieldassist.com'];
+export const OWNER_EMAILS = [
+  'twinkle.verma@fieldassist.com',
+  'twinkle.verma@flick2know.com'
+];
 
 export interface HRAdminDoc {
   email: string;
@@ -77,13 +80,12 @@ export async function fetchHRAdmins(): Promise<HRAdminDoc[]> {
     });
   }
 
-  // Filter out any legacy owner record if accidentally present
-  const filteredAdmins = admins.filter(a => a.email.toLowerCase() !== 'twinkle.verma@flick2know.com');
-
-  // Sort: owner first, then alphabetically
-  return filteredAdmins.sort((a, b) => {
-    if (a.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return -1;
-    if (b.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return 1;
+  // Sort: owners first, then alphabetically
+  return admins.sort((a, b) => {
+    const aIsOwner = isOwnerEmail(a.email);
+    const bIsOwner = isOwnerEmail(b.email);
+    if (aIsOwner && !bIsOwner) return -1;
+    if (!aIsOwner && bIsOwner) return 1;
     return a.email.localeCompare(b.email);
   });
 }
@@ -93,25 +95,16 @@ export async function fetchHRAdmins(): Promise<HRAdminDoc[]> {
  */
 export async function seedOwnerHRAdmin(): Promise<void> {
   try {
-    const ownerRef = doc(db, 'hrAdmins', OWNER_EMAIL.toLowerCase());
-    const snap = await getDoc(ownerRef);
-    if (!snap.exists()) {
-      await setDoc(ownerRef, {
-        email: OWNER_EMAIL.toLowerCase(),
-        addedBy: 'System Owner',
-        addedAt: new Date().toISOString()
-      });
-    }
-
-    // Clean up legacy owner record in hrAdmins if present
-    try {
-      const legacyOwnerRef = doc(db, 'hrAdmins', 'twinkle.verma@flick2know.com');
-      const legacySnap = await getDoc(legacyOwnerRef);
-      if (legacySnap.exists()) {
-        await deleteDoc(legacyOwnerRef);
+    for (const email of OWNER_EMAILS) {
+      const ownerRef = doc(db, 'hrAdmins', email.toLowerCase());
+      const snap = await getDoc(ownerRef);
+      if (!snap.exists()) {
+        await setDoc(ownerRef, {
+          email: email.toLowerCase(),
+          addedBy: 'System Owner',
+          addedAt: new Date().toISOString()
+        });
       }
-    } catch {
-      // Ignore if not found or restricted
     }
   } catch (err) {
     // Ignore if not permitted or network issue

@@ -56,7 +56,8 @@ export default function App() {
   const [isCandidateLoggedIn, setIsCandidateLoggedIn] = useState<boolean>(false);
   const [isHRAuthenticated, setIsHRAuthenticated] = useState<boolean>(() => {
     const user = auth.currentUser;
-    return Boolean(user && user.email && isApprovedHREmail(user.email));
+    const sessionAuth = typeof window !== 'undefined' && sessionStorage.getItem('fa_hr_auth') === 'true';
+    return Boolean((user && user.email && isApprovedHREmail(user.email)) || sessionAuth);
   });
   const [hrUser, setHrUser] = useState<FirebaseUser | null>(() => auth.currentUser);
   const [unapprovedHREmail, setUnapprovedHREmail] = useState<string | null>(null);
@@ -141,8 +142,14 @@ export default function App() {
             setHrUser(currentUser);
           }
         } else {
-          setIsHRAuthenticated(false);
-          setIsHRAuthModalOpen(true);
+          const hasSessionAuth = sessionStorage.getItem('fa_hr_auth') === 'true';
+          if (hasSessionAuth) {
+            setIsHRAuthenticated(true);
+            setIsHRAuthModalOpen(false);
+          } else {
+            setIsHRAuthenticated(false);
+            setIsHRAuthModalOpen(true);
+          }
         }
       } else {
         setActiveView('candidate');
