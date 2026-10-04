@@ -405,9 +405,22 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                   </p>
 
                   {status === 'Failed' && stageLog?.errorMessage && (
-                    <p className="text-[11px] text-rose-700 font-semibold bg-rose-50 p-2 rounded-lg border border-rose-200 mt-1">
-                      <strong>Error:</strong> {stageLog.errorMessage}
-                    </p>
+                    <div className="bg-rose-50 p-2.5 rounded-lg border border-rose-200 mt-2 space-y-2">
+                      <p className="text-[11px] text-rose-700 font-semibold">
+                        <strong>Previous Error:</strong> {stageLog.errorMessage}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSendEmail(key, true)}
+                          disabled={isLoading}
+                          className="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 rounded text-[11px] shadow-2xs transition cursor-pointer disabled:opacity-50"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+                          <span>Retry Sending with App Password</span>
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -474,16 +487,20 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                     )
                   ) : (
                     <button
-                      onClick={() => handleSendEmail(key, false)}
+                      onClick={() => handleSendEmail(key, status === 'Failed')}
                       disabled={isLoading || !active}
-                      className="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs ${
+                        status === 'Failed'
+                          ? 'bg-purple-700 hover:bg-purple-800 text-white'
+                          : 'bg-purple-700 hover:bg-purple-800 text-white'
+                      }`}
                     >
                       {isLoading ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <Send className="w-3.5 h-3.5" />
                       )}
-                      <span>Send Now</span>
+                      <span>{status === 'Failed' ? 'Retry Send Now' : 'Send Now'}</span>
                     </button>
                   )}
                 </div>

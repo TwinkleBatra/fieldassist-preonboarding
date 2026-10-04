@@ -186,60 +186,30 @@ export default function App() {
     const isHrRoute = pathname === '/hr' || pathname.startsWith('/hr') || urlParams.get('view') === 'hr';
 
     if (codeParam) {
-      const q = codeParam.trim().toLowerCase();
-      const matched = loadedCandidates.find(c =>
-        c.email.toLowerCase() === q ||
-        (c.accessCode && c.accessCode.toLowerCase() === q) ||
-        c.id.toLowerCase() === q
-      );
-
-      if (matched) {
-        setActiveCandidateIdState(matched.id);
-        setActiveCandidateId(matched.id);
-        setIsCandidateLoggedIn(true);
-        setIsCandidateLoginModalOpen(false);
-        setActiveView('candidate');
-      } else {
-        // Code param was provided but not found in current local dataset
-        // Securely look up individual candidate via lookupCandidateInFirestore
-        lookupCandidateInFirestore(codeParam).then(remoteMatch => {
-          if (remoteMatch) {
-            saveCandidate(remoteMatch, true).catch(() => {});
-            setCandidates(prev => {
-              const existingIdx = prev.findIndex(c => c.id === remoteMatch.id);
-              if (existingIdx >= 0) {
-                const next = [...prev];
-                next[existingIdx] = remoteMatch;
-                return next;
-              }
-              return [...prev, remoteMatch];
-            });
-            setActiveCandidateIdState(remoteMatch.id);
-            setActiveCandidateId(remoteMatch.id);
-            setIsCandidateLoggedIn(true);
-            setIsCandidateLoginModalOpen(false);
-            setActiveView('candidate');
-          } else {
-            setUnmatchedUrlCode(codeParam);
-            setIsCandidateLoggedIn(false);
-            if (!isHrRoute) {
-              setIsCandidateLoginModalOpen(true);
+      const trimmedCode = codeParam.trim();
+      setUnmatchedUrlCode(trimmedCode);
+      // Pre-cache remote candidate in background if available in Firestore, but DO NOT auto-login
+      lookupCandidateInFirestore(trimmedCode).then(remoteMatch => {
+        if (remoteMatch) {
+          saveCandidate(remoteMatch, true).catch(() => {});
+          setCandidates(prev => {
+            const existingIdx = prev.findIndex(c => c.id === remoteMatch.id);
+            if (existingIdx >= 0) {
+              const next = [...prev];
+              next[existingIdx] = remoteMatch;
+              return next;
             }
-          }
-        }).catch(() => {
-          setUnmatchedUrlCode(codeParam);
-          setIsCandidateLoggedIn(false);
-          if (!isHrRoute) {
-            setIsCandidateLoginModalOpen(true);
-          }
-        });
-      }
-    } else {
-      // Root URL shows ONLY candidate portal login if not already logged in
-      if (!isHrRoute) {
-        setIsCandidateLoggedIn(false);
-        setIsCandidateLoginModalOpen(true);
-      }
+            return [...prev, remoteMatch];
+          });
+        }
+      }).catch(() => {});
+    }
+
+    // Candidate must always enter their Access Code or Email via CandidateLoginModal
+    if (!isHrRoute) {
+      setIsCandidateLoggedIn(false);
+      setIsCandidateLoginModalOpen(true);
+      setActiveView('candidate');
     }
   }, []);
 

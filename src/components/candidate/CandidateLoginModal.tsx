@@ -18,15 +18,13 @@ export const CandidateLoginModal: React.FC<CandidateLoginModalProps> = ({
   initialCode
 }) => {
   const [accessInput, setAccessInput] = useState(initialCode || '');
-  const [errorMsg, setErrorMsg] = useState(
-    initialCode ? `Access Code "${initialCode}" was not found in the local records. Please verify or try entering your registered personal email below.` : ''
-  );
+  const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (initialCode && !accessInput) {
       setAccessInput(initialCode);
-      setErrorMsg(`Access Code "${initialCode}" was not found in the local records. Please verify or try entering your registered personal email below.`);
+      setErrorMsg('');
     }
   }, [initialCode]);
 
