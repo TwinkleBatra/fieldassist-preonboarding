@@ -401,7 +401,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                   </div>
 
                   <p className="text-xs text-slate-600 font-medium truncate">
-                    <strong className="text-slate-800">Subject:</strong> {tpl.subject}
+                    <strong className="text-slate-800">Subject:</strong> {tpl.getSubject ? tpl.getSubject(firstName) : tpl.subject.replace(/{{Name}}|{{firstName}}/g, firstName)}
                   </p>
 
                   {status === 'Failed' && stageLog?.errorMessage && (

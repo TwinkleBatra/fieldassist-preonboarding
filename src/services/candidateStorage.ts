@@ -24,12 +24,15 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
     ? { ...existingAutomation.stages }
     : {} as Record<EmailStageKey, EmailStageLog>;
 
+  const candFirstName = extractFirstName(candidate.name);
+
   for (const key of stagesKeys) {
     const tpl = EMAIL_TEMPLATES[key];
     const existingLog = newStages[key];
     const targetDate = key === 'account_ready'
       ? (existingLog?.targetDate || todayStr)
       : calculateTargetDate(candidate.joiningDate, tpl.daysBeforeJoining);
+    const expectedSubject = (tpl.getSubject ? tpl.getSubject(candFirstName) : tpl.subject).replace(/{{Name}}|{{firstName}}/g, candFirstName);
 
     if (!existingLog) {
       updated = true;
@@ -41,12 +44,12 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
         targetDate,
         recipientEmail: candidate.email,
         recipientName: candidate.name,
-        subject: tpl.subject,
+        subject: expectedSubject,
         status: 'Pending',
         logs: [key === 'account_ready' ? 'Immediate on candidate creation' : `Scheduled for ${targetDate} (Automated 7/5/3-day timeline)`]
       };
     } else {
-      if (existingLog.targetDate !== targetDate || existingLog.recipientEmail !== candidate.email || existingLog.subject !== tpl.subject) {
+      if (existingLog.targetDate !== targetDate || existingLog.recipientEmail !== candidate.email || existingLog.subject !== expectedSubject || existingLog.stageName !== tpl.stageName) {
         updated = true;
         const currentLogs = Array.isArray(existingLog.logs) ? [...existingLog.logs] : [];
         if (existingLog.targetDate !== targetDate) {
@@ -54,10 +57,11 @@ export const ensureEmailAutomationState = (candidate: Candidate): { candidate: C
         }
         newStages[key] = {
           ...existingLog,
+          stageName: tpl.stageName,
           targetDate,
           recipientEmail: candidate.email,
           recipientName: candidate.name,
-          subject: tpl.subject,
+          subject: expectedSubject,
           logs: currentLogs
         };
       }

@@ -193,10 +193,12 @@ async function startServer() {
       const emailText = template.getBodyText(firstName, sampleCandidate);
       const emailHtml = template.getHtmlContent(firstName, sampleCandidate);
 
+      const resolvedSubject = (template.getSubject ? template.getSubject(firstName, sampleCandidate) : template.subject).replace(/{{Name}}|{{firstName}}/g, firstName);
+
       const dispatchResult = await sendEmailViaProvider({
         toEmail: targetEmail,
         toName: name,
-        subject: `[FieldAssist Live Test] ${template.subject}`,
+        subject: `[FieldAssist Live Test] ${resolvedSubject}`,
         bodyText: emailText,
         bodyHtml: emailHtml
       });
@@ -211,7 +213,7 @@ async function startServer() {
         errorMessage: dispatchResult.errorMessage,
         targetEmail,
         stageKey: targetStage,
-        subject: template.subject
+        subject: resolvedSubject
       });
     } catch (err: any) {
       console.error("Error in /api/emails/send-test:", err);
@@ -270,10 +272,12 @@ async function startServer() {
       const emailText = template.getBodyText(firstName, candidate);
       const emailHtml = template.getHtmlContent(firstName, candidate);
 
+      const resolvedSubject = (template.getSubject ? template.getSubject(firstName, candidate) : template.subject).replace(/{{Name}}|{{firstName}}/g, firstName);
+
       const dispatchResult = await sendEmailViaProvider({
         toEmail: candidate.email,
         toName: candidate.name,
-        subject: template.subject,
+        subject: resolvedSubject,
         bodyText: emailText,
         bodyHtml: emailHtml
       });
@@ -287,7 +291,7 @@ async function startServer() {
         targetDate,
         recipientEmail: candidate.email,
         recipientName: candidate.name,
-        subject: template.subject,
+        subject: resolvedSubject,
         status: dispatchResult.success ? 'Sent' : 'Failed',
         sentAt: nowIso,
         errorMessage: dispatchResult.errorMessage,
@@ -329,10 +333,11 @@ async function startServer() {
 
           if (todayStr === targetDate && (!existingLog || existingLog.status === 'Pending')) {
             const firstName = extractFirstName(candidate.name);
+            const resolvedSubject = (template.getSubject ? template.getSubject(firstName, candidate) : template.subject).replace(/{{Name}}|{{firstName}}/g, firstName);
             const dispatch = await sendEmailViaProvider({
               toEmail: candidate.email,
               toName: candidate.name,
-              subject: template.subject,
+              subject: resolvedSubject,
               bodyText: template.getBodyText(firstName, candidate),
               bodyHtml: template.getHtmlContent(firstName, candidate)
             });

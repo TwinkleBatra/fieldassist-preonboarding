@@ -11,6 +11,7 @@ export interface EmailTemplateDefinition {
   daysBeforeJoining: number;
   stageName: string;
   subject: string;
+  getSubject?: (firstName: string, candidate?: Candidate) => string;
   getFirstName: (fullName: string) => string;
   getBodyText: (firstName: string, candidate?: Candidate) => string;
   getHtmlContent: (firstName: string, candidate?: Candidate) => string;
@@ -142,9 +143,10 @@ ${OFFICIAL_FOOTER_TEXT}`;
   welcome_7d: {
     key: 'welcome_7d',
     daysBeforeJoining: 7,
-    stageName: '7 Days Before – Welcome Email',
-    subject: 'Welcome to FieldAssist – Your Onboarding Journey Starts Here!',
+    stageName: '7 Days Before – The Story You\'re Joining',
+    subject: "7 days to go, {{Name}}! Here's the story you're joining",
     getFirstName: extractFirstName,
+    getSubject: (firstName: string) => `7 days to go, ${firstName}! Here's the story you're joining`,
     getBodyText: (firstName: string, candidate?: Candidate) => {
       const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('welcome_7d', cand, firstName).bodyText;
@@ -158,9 +160,10 @@ ${OFFICIAL_FOOTER_TEXT}`;
   culture_5d: {
     key: 'culture_5d',
     daysBeforeJoining: 5,
-    stageName: '5 Days Before – Culture Email',
-    subject: 'You + FieldAssist = Let’s Get Started!',
+    stageName: '5 Days Before – Everyone Gets to Build',
+    subject: '5 days to go, {{Name}}! At FieldAssist, everyone gets to build',
     getFirstName: extractFirstName,
+    getSubject: (firstName: string) => `5 days to go, ${firstName}! At FieldAssist, everyone gets to build`,
     getBodyText: (firstName: string, candidate?: Candidate) => {
       const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('culture_5d', cand, firstName).bodyText;
@@ -174,9 +177,10 @@ ${OFFICIAL_FOOTER_TEXT}`;
   comm_3d: {
     key: 'comm_3d',
     daysBeforeJoining: 3,
-    stageName: '3 Days Before – Communication & Resources',
-    subject: 'Getting Started at FieldAssist – Resources to Know Us Better!',
+    stageName: '3 Days Before – World Stage & NDTV Profit',
+    subject: '3 day to go, {{Name}}! FieldAssist on the world stage and on NDTV Profit',
     getFirstName: extractFirstName,
+    getSubject: (firstName: string) => `3 day to go, ${firstName}! FieldAssist on the world stage and on NDTV Profit`,
     getBodyText: (firstName: string, candidate?: Candidate) => {
       const cand = candidate || { id: 'FA-1001', name: firstName, email: '', phone: '', role: '', department: '', joiningDate: '', reportingTime: '', officeAddress: '', officeCity: '', lunchInfo: '', dressCode: '', reportingManager: '', reportingManagerRole: '', hrbp: { name: 'Twinkle Verma', email: 'twinkle.verma@fieldassist.com', phone: '', role: 'HRBP' }, status: 'Offer Accepted', formStatus: 'Not Started', formData: {} as any, documents: [], milestones: [], schedule: [] };
       return renderFirestoreTemplate('comm_3d', cand, firstName).bodyText;

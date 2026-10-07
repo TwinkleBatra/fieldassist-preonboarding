@@ -23,170 +23,235 @@ export const INITIAL_APPROVED_LINKS: LinksSettingsDoc = {
 export const INITIAL_APPROVED_TEMPLATES: Record<string, EmailTemplateDoc> = {
   welcome_7d: {
     id: 'welcome_7d',
-    subject: 'Welcome to FieldAssist – Your Onboarding Journey Starts Here!',
-    greeting: 'Hi {{firstName}},',
+    subject: "7 days to go, {{Name}}! Here's the story you're joining",
+    greeting: 'Hi {{Name}},',
     blocks: [
       {
         type: 'paragraph',
-        text: 'Congratulations once again—and a warm welcome to FieldAssist!'
+        text: "7 days to go! On {{Date of Joining}}, you'll officially become part of FieldAssist, and we thought you should know the story you're stepping into."
+      },
+      {
+        type: 'heading',
+        text: 'FROM INDIA TO THE WORLD'
       },
       {
         type: 'paragraph',
-        text: 'We’re thrilled to have you as part of our growing team. Your journey with us is just beginning, and we’re committed to making your onboarding experience smooth, engaging, and memorable.'
+        text: 'FieldAssist started by helping CPG brands run smarter field operations. Today, some of the biggest names in the industry look to us for answers on how AI can transform the way field teams work, how retailers are understood, and how decisions get made in real time.'
       },
       {
         type: 'paragraph',
-        text: 'Over the next few days, we’ll be sharing important resources and information to help you prepare for your joining.'
+        text: 'The best proof is FieldVerse.'
+      },
+      {
+        type: 'heading',
+        text: 'WHAT IS FIELDVERSE?'
       },
       {
         type: 'paragraph',
-        text: 'For now, here’s what you can expect:'
+        text: 'FieldVerse is our invite-only, closed-door forum for senior CPG leaders. It is a room where CXOs talk openly with their peers about AI-led field execution, retail intelligence and real-time decision-making. No sales pitches. No demos. Just honest conversations.'
+      },
+      {
+        type: 'paragraph',
+        text: 'After the success of FieldVerse India, the forum went global:'
       },
       {
         type: 'bullets',
         items: [
-          {
-            text: 'Access to our AMMO pre-read, to help you get familiar with FieldAssist.',
-            linkLabel: 'AMMO',
-            linkKey: 'ammoPreread'
-          },
-          {
-            text: 'Introduction to your HR Business Partner and HR Operations SPOC, about 15 days before your joining.'
-          }
+          { text: 'Dubai' },
+          { text: 'Singapore' },
+          { text: 'Jakarta' },
+          { text: 'Nairobi, Kenya (newest)' },
+          { text: 'London (newest)' }
         ]
       },
       {
-        type: 'paragraph',
-        text: 'In case you have any questions or need support at any stage, feel free to reach out to your recruiter—your go-to person until your onboarding begins.'
+        type: 'heading',
+        text: 'WHY THIS MATTERS TO YOU'
       },
       {
         type: 'paragraph',
-        text: 'Cheers!'
+        text: "When leaders from across the world choose to spend their time with us, it says something about the trust we've built and the work you'll be a part of from Day 1."
+      },
+      {
+        type: 'paragraph',
+        text: 'See it for yourself:'
+      },
+      {
+        type: 'paragraph',
+        text: 'FieldVerse highlights:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7507734851148734464'
+      },
+      {
+        type: 'paragraph',
+        text: 'More moments from the forum:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7500455075962744832\nhttps://www.linkedin.com/feed/update/urn:li:activity:7488869657597370368\nhttps://www.linkedin.com/feed/update/urn:li:activity:7486638886018830337'
+      },
+      {
+        type: 'heading',
+        text: 'NEXT UP'
+      },
+      {
+        type: 'paragraph',
+        text: "In the coming days we'll share what life at FieldAssist looks like and what to expect on Day 1."
+      },
+      {
+        type: 'paragraph',
+        text: 'Questions in the meantime? Write to me anytime at twinkle.verma@fieldassist.com.'
+      },
+      {
+        type: 'paragraph',
+        text: "Can't wait to see you!"
       }
     ],
-    signoff: 'Thanks & Regards, FA HR'
+    signoff: 'Warm regards,\nTwinkle Verma | FieldAssist HR'
   },
 
   culture_5d: {
     id: 'culture_5d',
-    subject: 'You + FieldAssist = Let’s Get Started!',
-    greeting: 'Hi {{firstName}},',
+    subject: '5 days to go, {{Name}}! At FieldAssist, everyone gets to build',
+    greeting: 'Hi {{Name}},',
     blocks: [
       {
         type: 'paragraph',
-        text: 'We’re counting down the days till you officially become a part of the FieldAssist tribe, but we couldn’t wait to give you a glimpse of what’s in store.'
+        text: "5 days to go! {{Date of Joining}} is almost here, and we're counting down with you."
       },
       {
         type: 'paragraph',
-        text: 'Before your Day 1, we’d love to give you a peek into what it feels like to be at FA.'
+        text: 'Last time, we showed you how far FieldAssist has travelled. Today, we want to show you something that says a lot about how we think.'
       },
       {
         type: 'heading',
-        text: 'A Culture that Walks the Talk'
+        text: 'AI IS EVERYWHERE. SO BUILDING IS FOR EVERYONE.'
+      },
+      {
+        type: 'paragraph',
+        text: "At FieldAssist, we believe AI is not only for the tech team. It's a tool anyone can pick up. So we created AI-thon, a hackathon-style challenge built especially for our non-tech colleagues."
+      },
+      {
+        type: 'paragraph',
+        text: 'The brief was simple: take an idea of your own, use AI to bring it to life, and build something real.'
+      },
+      {
+        type: 'heading',
+        text: 'WHAT HAPPENED'
       },
       {
         type: 'bullets',
         items: [
-          {
-            text: '4× Great Place to Work-Certified – Our culture isn’t a tagline. It’s how we treat people, lead teams, and celebrate progress.'
-          },
-          {
-            text: 'Bootstrapped & Profitable – We’ve built FA on passion, not funding. And we’ve grown year after year with agility and intention.'
-          },
-          {
-            text: 'Voices from the Inside – Hear directly from our teammates about what makes FA special',
-            linkLabel: 'Voices from the Inside',
-            linkKey: 'voicesFromInside'
-          }
+          { text: 'People from non-tech teams came forward with ideas from their own day-to-day work' },
+          { text: 'They used AI to turn those ideas into working builds, no coding background needed' },
+          { text: 'A panel of judges reviewed every build and picked the best ones' },
+          { text: 'The winners received awards and recognition' },
+          { text: "And the best part: the winning ideas didn't stay on a stage. They were put to use inside the company" }
         ]
       },
       {
         type: 'heading',
-        text: 'Culture in Motion: Our Goa Offsite'
+        text: 'WHAT THIS TELLS YOU ABOUT FIELDASSIST'
       },
       {
         type: 'paragraph',
-        text: 'Earlier this year, we brought the entire company to Goa, not just for fun, but for alignment, celebration, and forward thinking.'
+        text: "At FieldAssist, a good idea matters more than your job title. If you can spot a problem and imagine a better way, you can build it, and we'll back you."
+      },
+      {
+        type: 'heading',
+        text: 'SEE IT FOR YOURSELF'
       },
       {
         type: 'paragraph',
-        text: 'From powerful strategy sessions to sunset vibes, it was the perfect mix of ambition and culture.'
-      },
-      {
-        type: 'button',
-        label: 'See the Highlights →',
-        linkKey: 'goaHighlights'
-      },
-      {
-        type: 'note',
-        text: '(Yes, that energy is real. Yes, you’ll love it here.)'
+        text: 'The latest from AI-thon:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7500126538240245760'
       },
       {
         type: 'paragraph',
-        text: 'Here’s to a journey full of impact, learning, and growth.'
+        text: 'More moments from AI-thon:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7495436037582811136\nhttps://www.linkedin.com/feed/update/urn:li:activity:7494054891640741888\nhttps://www.linkedin.com/feed/update/urn:li:activity:7491108371924922368\nhttps://www.linkedin.com/feed/update/urn:li:activity:7485952306807562240\nhttps://www.linkedin.com/feed/update/urn:li:activity:7480251796720861184\nhttps://www.linkedin.com/feed/update/urn:li:activity:7477988434884661249\nhttps://www.linkedin.com/feed/update/urn:li:activity:7474742241740210176\nhttps://www.linkedin.com/feed/update/urn:li:activity:7472989053064224768\nhttps://www.linkedin.com/feed/update/urn:li:activity:7470091441378279425'
+      },
+      {
+        type: 'paragraph',
+        text: 'So start thinking: what would you build?'
+      },
+      {
+        type: 'paragraph',
+        text: "Your next big idea could be the one we all end up using. We can't wait to hear it."
+      },
+      {
+        type: 'paragraph',
+        text: 'See you very soon!'
       }
     ],
-    signoff: 'Thanks & Regards, FA HR'
+    signoff: 'Warm regards,\nTwinkle Verma | FieldAssist HR'
   },
 
   comm_3d: {
     id: 'comm_3d',
-    subject: 'Getting Started at FieldAssist – Resources to Know Us Better!',
-    greeting: 'Hi {{firstName}},',
+    subject: '3 day to go, {{Name}}! FieldAssist on the world stage and on NDTV Profit',
+    greeting: 'Hi {{Name}},',
     blocks: [
       {
         type: 'paragraph',
-        text: 'Hope you enjoyed the sneak peek we shared earlier about life at FieldAssist — that was just the beginning!'
+        text: "Just 1 day to go! Tomorrow is {{Date of Joining}}, and before you walk in, we'd like you to see how FieldAssist is showing up, on the global stage and in the national spotlight."
+      },
+      {
+        type: 'heading',
+        text: '1. ON THE GLOBAL STAGE: GROCERYSHOP 2026'
       },
       {
         type: 'paragraph',
-        text: 'Your journey with us is just getting started, and we’re here to ensure it begins on a smooth and exciting note.'
+        text: "Groceryshop, held in Las Vegas, is one of the retail industry's most influential global events, bringing together leaders from retail, CPG and consumer brands. FieldAssist took part to make one point: the next big AI opportunity in retail isn't only online. It's inside the store, where most grocery sales still happen."
       },
       {
         type: 'paragraph',
-        text: 'To help you get familiar with our culture, people, and what makes FA a great place to work, we’ve put together a few useful resources just for you:'
-      },
-      {
-        type: 'bullets',
-        items: [
-          {
-            text: 'FA Newsletter - Stay updated with all the exciting happenings!',
-            linkLabel: 'Read Newsletter',
-            linkKey: 'newsletter'
-          },
-          {
-            text: 'LinkedIn Page - Follow us for company updates and stories from the field.',
-            linkLabel: 'Visit LinkedIn',
-            linkKey: 'linkedinPage'
-          },
-          {
-            text: 'Instagram - A peek into our people, events, and behind-the-scenes moments.',
-            linkLabel: 'Follow Instagram',
-            linkKey: 'instagram'
-          },
-          {
-            text: 'Latest Pathfinder\'s video - Hear stories straight from our employees about their growth and impact.',
-            linkLabel: 'Watch Video',
-            linkKey: 'pathfinderVideo'
-          }
-        ]
+        text: 'That is where our Perfect Store comes in: the right products, in the right stores, in the right quantities, executed the right way. Doing this consistently across thousands of stores is the hard part. Brands need to know which micromarkets matter, what assortment belongs in each store, how much to stock and where shelf execution is breaking.'
       },
       {
         type: 'paragraph',
-        text: 'If you have any questions, feel free to reach out to your respective recruiter or reply to this email.'
+        text: 'At our booth, the team showcased the Agentic Perfect Store, which spots execution gaps, flags what needs attention and guides field teams to the right action faster, turning shelf gaps into sales opportunities. Our leadership also met CPG and retail leaders to discuss what stronger execution unlocks, from productivity and decision velocity to revenue growth.'
       },
       {
         type: 'paragraph',
-        text: 'You can also rate us at - AmbitionBox: (linkLabel "Link", ambitionBox) | Glassdoor: (linkLabel "Link", glassdoor)'
+        text: 'The message is simple: move from store-level visibility to store-level action, store by store.'
+      },
+      {
+        type: 'paragraph',
+        text: 'Groceryshop 2026 highlights:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7509223401954283520'
+      },
+      {
+        type: 'paragraph',
+        text: 'More from the event:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7506676960077656066\nhttps://www.linkedin.com/feed/update/urn:li:activity:7506321134439669760'
+      },
+      {
+        type: 'heading',
+        text: '2. IN THE NATIONAL SPOTLIGHT: NDTV PROFIT'
+      },
+      {
+        type: 'paragraph',
+        text: "FieldAssist was featured on NDTV Profit's The Great Business Story: Transforming India, a series on the ideas, people and technology shaping how India does business."
+      },
+      {
+        type: 'paragraph',
+        text: 'In a special segment, our Co-Founder & CEO, Divir Tiwari, shared how AI-native Route-to-Market is reshaping CPG, from faster decision-making to smarter last-mile execution. The segment showed how brands can move beyond dashboards and visibility to build intelligent, responsive, execution-led RTM systems, and how FieldAssist helps FMCG and consumer brands turn field intelligence into smarter decisions and stronger execution.'
+      },
+      {
+        type: 'paragraph',
+        text: 'The latest from the segment:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7512467128868868096'
+      },
+      {
+        type: 'paragraph',
+        text: 'More from the feature:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7512041039675781120\nhttps://www.linkedin.com/feed/update/urn:li:activity:7511960782666915840\nhttps://www.linkedin.com/feed/update/urn:li:activity:7511422371392794624'
+      },
+      {
+        type: 'paragraph',
+        text: 'Tomorrow, you become part of this story.'
+      },
+      {
+        type: 'paragraph',
+        text: 'Any last-minute questions? Write to me anytime at twinkle.verma@fieldassist.com.'
       }
     ],
-    signoff: 'Thanks & Regards, Team FA'
+    signoff: 'Warm regards,\nTwinkle Verma | FieldAssist HR'
   }
 };
 
 // In-memory cache synced with localStorage & Firestore
-const STORAGE_KEY_LINKS = 'fieldassist_links_doc_v1';
-const STORAGE_KEY_TEMPLATES = 'fieldassist_templates_doc_v1';
+const STORAGE_KEY_LINKS = 'fieldassist_links_doc_v2';
+const STORAGE_KEY_TEMPLATES = 'fieldassist_templates_doc_v3';
 
 let cachedLinks: LinksSettingsDoc | null = null;
 let cachedTemplates: Record<string, EmailTemplateDoc> | null = null;

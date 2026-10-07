@@ -65,7 +65,7 @@ export async function dispatchCandidateEmail(
 
   const firstName = extractFirstName(candidate.name);
   const targetDate = calculateTargetDate(candidate.joiningDate, template.daysBeforeJoining);
-  const emailSubject = template.subject;
+  const emailSubject = (template.getSubject ? template.getSubject(firstName, candidate) : template.subject).replace(/{{Name}}|{{firstName}}/g, firstName);
 
   // Contact Server API Endpoint
   let serverResponse: any = null;

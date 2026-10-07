@@ -37,6 +37,13 @@ export function substituteVariables(text: string, vars: Record<string, string>):
   return res;
 }
 
+export function autoLinkHtml(text: string): string {
+  const urlRegex = /(https?:\/\/[^\s<]+)/g;
+  return text.replace(urlRegex, (url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all; font-weight: 500;">${url}</a>`;
+  });
+}
+
 /**
  * Renders an email template from Firestore doc + settings/links into subject, text, and html
  */
@@ -67,7 +74,11 @@ export function renderFirestoreTemplate(
 
   const vars: Record<string, string> = {
     firstName: firstName || 'Team Member',
+    Name: firstName || 'Team Member',
+    name: firstName || 'Team Member',
     joiningDate: joiningDateFormatted,
+    'Date of Joining': joiningDateFormatted,
+    dateOfJoining: joiningDateFormatted,
     accessCode: accessCode
   };
 
@@ -92,7 +103,8 @@ export function renderFirestoreTemplate(
       case 'paragraph': {
         const text = substituteVariables(block.text, vars);
         textLines.push(text, '');
-        htmlBlocks.push(`<p style="margin: 12px 0; font-size: 14px; line-height: 1.6; color: #1e293b;">${text}</p>`);
+        const textWithLinks = autoLinkHtml(text);
+        htmlBlocks.push(`<p style="margin: 12px 0; font-size: 14px; line-height: 1.6; color: #1e293b;">${textWithLinks}</p>`);
         break;
       }
       case 'heading': {

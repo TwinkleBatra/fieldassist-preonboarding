@@ -81,9 +81,9 @@ const LINK_KEYS_META: Record<string, { label: string; placeholder: string; descr
 };
 
 const STAGES_META = [
-  { key: 'welcome_7d', title: '7 Days Before – Welcome Email' },
-  { key: 'culture_5d', title: '5 Days Before – Culture & Life at FA' },
-  { key: 'comm_3d', title: '3 Days Before – Resources & Communication' }
+  { key: 'welcome_7d', title: "7 Days Before – The Story You're Joining" },
+  { key: 'culture_5d', title: '5 Days Before – Everyone Gets to Build' },
+  { key: 'comm_3d', title: '3 Days Before – World Stage & NDTV Profit' }
 ];
 
 export const EmailSettingsModal: React.FC<EmailSettingsModalProps> = ({ isOpen, onClose, initialTab = 'templates' }) => {
