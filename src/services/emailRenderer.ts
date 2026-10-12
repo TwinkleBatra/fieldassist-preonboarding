@@ -44,6 +44,65 @@ export function autoLinkHtml(text: string): string {
   });
 }
 
+export function formatRawTextToHtmlBlocks(rawText: string, vars: Record<string, string>): { textLines: string[]; htmlBlocks: string[] } {
+  const resolved = substituteVariables(rawText, vars);
+  const rawParagraphs = resolved.split(/\n\s*\n/);
+  const textLines: string[] = [resolved];
+  const htmlBlocks: string[] = [];
+
+  for (const block of rawParagraphs) {
+    const trimmed = block.trim();
+    if (!trimmed) continue;
+
+    // Check if block consists of bullet points
+    const lines = trimmed.split('\n');
+    const isBulletList = lines.length > 0 && lines.every(l => {
+      const t = l.trim();
+      return !t || t.startsWith('- ') || t.startsWith('• ');
+    });
+
+    if (isBulletList) {
+      const itemsHtml = lines
+        .filter(l => l.trim())
+        .map(l => {
+          const content = l.trim().replace(/^[-•]\s*/, '');
+          return `<li style="margin-bottom: 6px; line-height: 1.6;">${autoLinkHtml(content)}</li>`;
+        })
+        .join('');
+      htmlBlocks.push(`<ul style="padding-left: 20px; margin: 12px 0 16px 0; font-size: 14px; color: #334155;">${itemsHtml}</ul>`);
+      continue;
+    }
+
+    // Check if this single line is a section heading
+    const isHeading = trimmed.length < 80 && !trimmed.includes('\n') && (
+      (trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed)) ||
+      /^[0-9]+\.\s+[A-Z\s]+:/.test(trimmed) ||
+      trimmed.startsWith('WHAT HAPPENED') ||
+      trimmed.startsWith('SEE IT FOR YOURSELF') ||
+      trimmed.startsWith('WHAT THIS TELLS YOU') ||
+      trimmed.startsWith('NEXT UP') ||
+      trimmed.startsWith('A QUICK NOTE') ||
+      trimmed.startsWith('A GLIMPSE OF') ||
+      trimmed.startsWith('GROCERYSHOP 2026') ||
+      trimmed.startsWith('FIELDASSIST ON NDTV PROFIT') ||
+      trimmed.startsWith('YOUR DAY 1 DETAILS') ||
+      trimmed.startsWith('WHAT YOUR DAY LOOKS LIKE') ||
+      trimmed.startsWith('YOUR CANDIDATE ONBOARDING PORTAL')
+    );
+
+    if (isHeading) {
+      htmlBlocks.push(`<h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 22px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">${trimmed}</h3>`);
+      continue;
+    }
+
+    // Normal paragraph with line breaks preserved
+    const paragraphLines = lines.map(l => autoLinkHtml(l)).join('<br>');
+    htmlBlocks.push(`<p style="margin: 12px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">${paragraphLines}</p>`);
+  }
+
+  return { textLines, htmlBlocks };
+}
+
 /**
  * Renders an email template from Firestore doc + settings/links into subject, text, and html
  */
@@ -72,6 +131,16 @@ export function renderFirestoreTemplate(
     ? formatJoiningDate(candidate.joiningDate, { month: 'long', day: 'numeric', year: 'numeric' })
     : 'Upcoming';
 
+  const reportingTime = candidate?.reportingTime || '11:00 AM';
+  const isRemote = candidate?.workMode === 'Remote';
+  const locationName = isRemote
+    ? 'Remote / Work From Home'
+    : (candidate?.joiningLocation?.name || candidate?.officeCity || 'Office Hub');
+  const address = isRemote
+    ? (candidate?.remoteInstructions || 'Remote joining instructions will be delivered to your inbox.')
+    : (candidate?.officeAddress || 'Registered Office Address');
+  const dressCode = candidate?.dressCode || 'Smart Casuals';
+
   const vars: Record<string, string> = {
     firstName: firstName || 'Team Member',
     Name: firstName || 'Team Member',
@@ -79,12 +148,73 @@ export function renderFirestoreTemplate(
     joiningDate: joiningDateFormatted,
     'Date of Joining': joiningDateFormatted,
     dateOfJoining: joiningDateFormatted,
-    accessCode: accessCode
+    reportingTime: reportingTime,
+    'Reporting Time': reportingTime,
+    location: locationName,
+    'Location': locationName,
+    address: address,
+    'Address': address,
+    'Address / Instructions': address,
+    dressCode: dressCode,
+    'Dress Code': dressCode,
+    accessCode: accessCode,
+    'Access Code': accessCode,
+    portalUrl: portalUrl,
+    'Portal Link': portalUrl
   };
 
   const subject = substituteVariables(templateDoc.subject, vars);
-  const greeting = substituteVariables(templateDoc.greeting, vars);
-  const signoff = substituteVariables(templateDoc.signoff, vars);
+
+  const portalBoxHtml = `
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 24px 0;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">
+        FieldAssist Candidate Portal
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <a href="${portalUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13px;">
+            Open Your Candidate Portal &rarr;
+          </a>
+        </div>
+        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; color: #475569;">
+          Access Code: <strong style="font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 14px; color: #4338ca; letter-spacing: 1px;">${accessCode}</strong>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // If rawText is provided (custom full text edited by HR), render directly from rawText!
+  if (templateDoc.rawText) {
+    const { textLines: rawTextLines, htmlBlocks: rawHtmlBlocks } = formatRawTextToHtmlBlocks(templateDoc.rawText, vars);
+
+    // Append Candidate Portal Box if not explicitly referenced
+    if (!templateDoc.rawText.includes('{{Portal Link}}') && !templateDoc.rawText.includes(portalUrl)) {
+      rawHtmlBlocks.push(portalBoxHtml);
+      rawTextLines.push(`\nCandidate Portal: ${portalUrl}\nAccess Code: ${accessCode}\n`);
+    }
+
+    const bodyText = rawTextLines.join('\n') + '\n\n' + OFFICIAL_FOOTER_TEXT;
+    const bodyHtml = `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+  <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 24px 32px; text-align: left;">
+    <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">FieldAssist Onboarding</span>
+    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">${subject}</h1>
+  </div>
+  <div style="padding: 32px;">
+    ${rawHtmlBlocks.join('\n')}
+    ${OFFICIAL_FOOTER_HTML}
+  </div>
+</div>`;
+
+    return {
+      subject,
+      bodyText,
+      bodyHtml
+    };
+  }
+
+  const greeting = substituteVariables(templateDoc.greeting || '', vars);
+  const signoff = substituteVariables(templateDoc.signoff || '', vars);
 
   // Build Text lines
   const textLines: string[] = [];
@@ -181,23 +311,6 @@ export function renderFirestoreTemplate(
   textLines.push(`Access Code: ${accessCode}`);
   textLines.push(`----------------------------------------\n`);
 
-  const portalBoxHtml = `
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 24px 0;">
-      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">
-        FieldAssist Candidate Portal
-      </div>
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-        <div>
-          <a href="${portalUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13px;">
-            Open Your Candidate Portal &rarr;
-          </a>
-        </div>
-        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; color: #475569;">
-          Access Code: <strong style="font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 14px; color: #4338ca; letter-spacing: 1px;">${accessCode}</strong>
-        </div>
-      </div>
-    </div>
-  `;
   htmlBlocks.push(portalBoxHtml);
 
   // Signoff

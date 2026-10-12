@@ -81,9 +81,11 @@ const LINK_KEYS_META: Record<string, { label: string; placeholder: string; descr
 };
 
 const STAGES_META = [
+  { key: 'account_ready', title: 'Immediate – Account Ready & Credentials' },
   { key: 'welcome_7d', title: "7 Days Before – The Story You're Joining" },
   { key: 'culture_5d', title: '5 Days Before – Everyone Gets to Build' },
-  { key: 'comm_3d', title: '3 Days Before – World Stage & NDTV Profit' }
+  { key: 'comm_3d', title: '3 Days Before – World Stage & NDTV Profit' },
+  { key: 'day1_1d', title: '1 Day Before – Final Day-1 Guide' }
 ];
 
 export const EmailSettingsModal: React.FC<EmailSettingsModalProps> = ({ isOpen, onClose, initialTab = 'templates' }) => {
@@ -120,19 +122,23 @@ export const EmailSettingsModal: React.FC<EmailSettingsModalProps> = ({ isOpen, 
 
   if (!isOpen) return null;
 
-  const currentTemplate: EmailTemplateDoc = templates[selectedStage] || {
+  const currentTemplate: EmailTemplateDoc = templates[selectedStage] || INITIAL_APPROVED_TEMPLATES[selectedStage] || {
     id: selectedStage,
     subject: '',
     greeting: '',
     blocks: [],
-    signoff: ''
+    signoff: '',
+    rawText: ''
   };
+
+  const currentBlocks = currentTemplate.blocks || [];
+  const hasRawText = typeof currentTemplate.rawText === 'string';
 
   const handleLinkChange = (key: string, value: string) => {
     setLinks(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleTemplateFieldChange = (field: 'subject' | 'greeting' | 'signoff', value: string) => {
+  const handleTemplateFieldChange = (field: 'subject' | 'greeting' | 'signoff' | 'rawText', value: string) => {
     setTemplates(prev => ({
       ...prev,
       [selectedStage]: {
@@ -143,7 +149,7 @@ export const EmailSettingsModal: React.FC<EmailSettingsModalProps> = ({ isOpen, 
   };
 
   const handleBlockChange = (index: number, updatedBlock: EmailBlock) => {
-    const nextBlocks = [...currentTemplate.blocks];
+    const nextBlocks = [...currentBlocks];
     nextBlocks[index] = updatedBlock;
     setTemplates(prev => ({
       ...prev,
@@ -166,13 +172,13 @@ export const EmailSettingsModal: React.FC<EmailSettingsModalProps> = ({ isOpen, 
       ...prev,
       [selectedStage]: {
         ...currentTemplate,
-        blocks: [...currentTemplate.blocks, newBlock]
+        blocks: [...currentBlocks, newBlock]
       }
     }));
   };
 
   const handleRemoveBlock = (index: number) => {
-    const nextBlocks = currentTemplate.blocks.filter((_, i) => i !== index);
+    const nextBlocks = currentBlocks.filter((_, i) => i !== index);
     setTemplates(prev => ({
       ...prev,
       [selectedStage]: {
@@ -438,241 +444,310 @@ export const EmailSettingsModal: React.FC<EmailSettingsModalProps> = ({ isOpen, 
                   <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
                     {/* Subject */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Email Subject Line
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-700">
+                          Email Subject Line
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          Supports {'{{Name}}'}, {'{{Date of Joining}}'}
+                        </span>
+                      </div>
                       <input
                         type="text"
-                        value={currentTemplate.subject}
+                        value={currentTemplate.subject || ''}
                         onChange={e => handleTemplateFieldChange('subject', e.target.value)}
                         className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30"
-                        placeholder="e.g. Welcome to FieldAssist – Your Onboarding Journey Starts Here!"
+                        placeholder="e.g. 7 days to go, {{Name}}! Here's the story you're joining"
                       />
                     </div>
 
-                    {/* Greeting */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Greeting Line
-                      </label>
-                      <input
-                        type="text"
-                        value={currentTemplate.greeting}
-                        onChange={e => handleTemplateFieldChange('greeting', e.target.value)}
-                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-mono"
-                        placeholder="Hi {{firstName}},"
-                      />
-                    </div>
-
-                    {/* Blocks Array */}
-                    <div className="space-y-3 pt-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                          Email Content Blocks ({currentTemplate.blocks.length})
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleAddBlock('paragraph')}
-                            className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
-                          >
-                            + Paragraph
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddBlock('heading')}
-                            className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
-                          >
-                            + Heading
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddBlock('bullets')}
-                            className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
-                          >
-                            + Bullets
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddBlock('button')}
-                            className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
-                          >
-                            + Button
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddBlock('note')}
-                            className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
-                          >
-                            + Note
-                          </button>
+                    {hasRawText ? (
+                      /* Full Raw Text Copy Editor */
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-purple-700" />
+                            <span>Complete Email Copy (Formatted Text)</span>
+                          </label>
+                          <span className="text-[11px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-medium">
+                            Auto-links URLs &amp; creates clean HTML blocks
+                          </span>
                         </div>
-                      </div>
 
-                      {currentTemplate.blocks.map((block, idx) => (
-                        <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 relative group">
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold uppercase">
-                            <span className="flex items-center gap-1.5">
-                              <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px]">
-                                {idx + 1}
-                              </span>
-                              Block Type: <span className="text-purple-900 font-mono">{block.type}</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveBlock(idx)}
-                              className="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer"
-                              title="Delete block"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                        {/* Supported Variable Tags for Quick Insertion */}
+                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                            Quick-Insert Variables (Click to copy/insert):
                           </div>
-
-                          {block.type === 'paragraph' && (
-                            <textarea
-                              rows={3}
-                              value={block.text}
-                              onChange={e => handleBlockChange(idx, { type: 'paragraph', text: e.target.value })}
-                              className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-sans"
-                              placeholder="Enter paragraph copy..."
-                            />
-                          )}
-
-                          {block.type === 'heading' && (
-                            <input
-                              type="text"
-                              value={block.text}
-                              onChange={e => handleBlockChange(idx, { type: 'heading', text: e.target.value })}
-                              className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600/30"
-                              placeholder="e.g. A Culture that Walks the Talk"
-                            />
-                          )}
-
-                          {block.type === 'bullets' && (
-                            <div className="space-y-2">
-                              {block.items.map((item, bulletIdx) => (
-                                <div key={bulletIdx} className="flex items-start gap-2 bg-white p-2 rounded-lg border border-slate-200">
-                                  <span className="text-xs text-slate-400 mt-1.5">•</span>
-                                  <div className="flex-1 space-y-1.5">
-                                    <textarea
-                                      rows={2}
-                                      value={item.text}
-                                      onChange={e => {
-                                        const newItems = [...block.items];
-                                        newItems[bulletIdx] = { ...item, text: e.target.value };
-                                        handleBlockChange(idx, { type: 'bullets', items: newItems });
-                                      }}
-                                      className="w-full text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600/40"
-                                      placeholder="Bullet text..."
-                                    />
-                                    <div className="flex items-center gap-2 text-xs">
-                                      <input
-                                        type="text"
-                                        value={item.linkLabel || ''}
-                                        onChange={e => {
-                                          const newItems = [...block.items];
-                                          newItems[bulletIdx] = { ...item, linkLabel: e.target.value };
-                                          handleBlockChange(idx, { type: 'bullets', items: newItems });
-                                        }}
-                                        placeholder="Optional Link Label (e.g. Read Newsletter)"
-                                        className="flex-1 text-[11px] p-1 border border-slate-200 rounded"
-                                      />
-                                      <select
-                                        value={item.linkKey || ''}
-                                        onChange={e => {
-                                          const newItems = [...block.items];
-                                          newItems[bulletIdx] = { ...item, linkKey: e.target.value || undefined };
-                                          handleBlockChange(idx, { type: 'bullets', items: newItems });
-                                        }}
-                                        className="text-[11px] p-1 border border-slate-200 rounded bg-white font-mono"
-                                      >
-                                        <option value="">No Link</option>
-                                        {Object.keys(LINK_KEYS_META).map(lk => (
-                                          <option key={lk} value={lk}>{lk}</option>
-                                        ))}
-                                      </select>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newItems = block.items.filter((_, i) => i !== bulletIdx);
-                                          handleBlockChange(idx, { type: 'bullets', items: newItems });
-                                        }}
-                                        className="text-slate-400 hover:text-rose-600 p-1"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              '{{Name}}',
+                              '{{Date of Joining}}',
+                              '{{Access Code}}',
+                              '{{Portal Link}}',
+                              '{{Reporting Time}}',
+                              '{{Location}}',
+                              '{{Address}}',
+                              '{{Dress Code}}'
+                            ].map(tag => (
                               <button
+                                key={tag}
                                 type="button"
                                 onClick={() => {
-                                  handleBlockChange(idx, {
-                                    type: 'bullets',
-                                    items: [...block.items, { text: '', linkLabel: '', linkKey: '' }]
-                                  });
+                                  const cur = currentTemplate.rawText || '';
+                                  handleTemplateFieldChange('rawText', cur + (cur.endsWith('\n') ? '' : ' ') + tag);
                                 }}
-                                className="text-[11px] text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 cursor-pointer pt-1"
+                                className="text-[10px] font-mono bg-white hover:bg-purple-100 text-purple-900 border border-purple-200 px-2 py-1 rounded transition cursor-pointer shadow-2xs"
+                                title={`Click to append ${tag} to email copy`}
                               >
-                                <Plus className="w-3 h-3" /> Add Bullet Item
+                                + {tag}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <textarea
+                            rows={16}
+                            value={currentTemplate.rawText || ''}
+                            onChange={e => handleTemplateFieldChange('rawText', e.target.value)}
+                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-sans leading-relaxed text-slate-800"
+                            placeholder="Enter the complete approved email body here..."
+                          />
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                            <span>Paragraphs separated by blank lines will render as responsive styled email cards.</span>
+                            <span>{(currentTemplate.rawText || '').split(/\s+/).filter(Boolean).length} words</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Block-based Template Editor (Fallback) */
+                      <>
+                        {/* Greeting */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Greeting Line
+                          </label>
+                          <input
+                            type="text"
+                            value={currentTemplate.greeting || ''}
+                            onChange={e => handleTemplateFieldChange('greeting', e.target.value)}
+                            className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-mono"
+                            placeholder="Hi {{firstName}},"
+                          />
+                        </div>
+
+                        {/* Blocks Array */}
+                        <div className="space-y-3 pt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                              Email Content Blocks ({currentBlocks.length})
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleAddBlock('paragraph')}
+                                className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
+                              >
+                                + Paragraph
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddBlock('heading')}
+                                className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
+                              >
+                                + Heading
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddBlock('bullets')}
+                                className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
+                              >
+                                + Bullets
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddBlock('button')}
+                                className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
+                              >
+                                + Button
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddBlock('note')}
+                                className="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold transition cursor-pointer"
+                              >
+                                + Note
                               </button>
                             </div>
-                          )}
+                          </div>
 
-                          {block.type === 'button' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-2.5 rounded-lg border border-slate-200">
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Button Label</label>
+                          {currentBlocks.map((block, idx) => (
+                            <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 relative group">
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold uppercase">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px]">
+                                    {idx + 1}
+                                  </span>
+                                  Block Type: <span className="text-purple-900 font-mono">{block.type}</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveBlock(idx)}
+                                  className="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer"
+                                  title="Delete block"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              {block.type === 'paragraph' && (
+                                <textarea
+                                  rows={3}
+                                  value={block.text}
+                                  onChange={e => handleBlockChange(idx, { type: 'paragraph', text: e.target.value })}
+                                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-sans"
+                                  placeholder="Enter paragraph copy..."
+                                />
+                              )}
+
+                              {block.type === 'heading' && (
                                 <input
                                   type="text"
-                                  value={block.label}
-                                  onChange={e => handleBlockChange(idx, { ...block, label: e.target.value })}
-                                  className="w-full text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600/40"
-                                  placeholder="e.g. See the Highlights"
+                                  value={block.text}
+                                  onChange={e => handleBlockChange(idx, { type: 'heading', text: e.target.value })}
+                                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600/30"
+                                  placeholder="e.g. A Culture that Walks the Talk"
                                 />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Link Key</label>
-                                <select
-                                  value={block.linkKey}
-                                  onChange={e => handleBlockChange(idx, { ...block, linkKey: e.target.value })}
-                                  className="w-full text-xs p-1.5 border border-slate-200 rounded bg-white font-mono"
-                                >
-                                  {Object.keys(LINK_KEYS_META).map(lk => (
-                                    <option key={lk} value={lk}>{lk}</option>
+                              )}
+
+                              {block.type === 'bullets' && (
+                                <div className="space-y-2">
+                                  {block.items.map((item, bulletIdx) => (
+                                    <div key={bulletIdx} className="flex items-start gap-2 bg-white p-2 rounded-lg border border-slate-200">
+                                      <span className="text-xs text-slate-400 mt-1.5">•</span>
+                                      <div className="flex-1 space-y-1.5">
+                                        <textarea
+                                          rows={2}
+                                          value={item.text}
+                                          onChange={e => {
+                                            const newItems = [...block.items];
+                                            newItems[bulletIdx] = { ...item, text: e.target.value };
+                                            handleBlockChange(idx, { type: 'bullets', items: newItems });
+                                          }}
+                                          className="w-full text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600/40"
+                                          placeholder="Bullet text..."
+                                        />
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <input
+                                            type="text"
+                                            value={item.linkLabel || ''}
+                                            onChange={e => {
+                                              const newItems = [...block.items];
+                                              newItems[bulletIdx] = { ...item, linkLabel: e.target.value };
+                                              handleBlockChange(idx, { type: 'bullets', items: newItems });
+                                            }}
+                                            placeholder="Optional Link Label (e.g. Read Newsletter)"
+                                            className="flex-1 text-[11px] p-1 border border-slate-200 rounded"
+                                          />
+                                          <select
+                                            value={item.linkKey || ''}
+                                            onChange={e => {
+                                              const newItems = [...block.items];
+                                              newItems[bulletIdx] = { ...item, linkKey: e.target.value || undefined };
+                                              handleBlockChange(idx, { type: 'bullets', items: newItems });
+                                            }}
+                                            className="text-[11px] p-1 border border-slate-200 rounded bg-white font-mono"
+                                          >
+                                            <option value="">No Link</option>
+                                            {Object.keys(LINK_KEYS_META).map(lk => (
+                                              <option key={lk} value={lk}>{lk}</option>
+                                            ))}
+                                          </select>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newItems = block.items.filter((_, i) => i !== bulletIdx);
+                                              handleBlockChange(idx, { type: 'bullets', items: newItems });
+                                            }}
+                                            className="text-slate-400 hover:text-rose-600 p-1"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
                                   ))}
-                                </select>
-                              </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleBlockChange(idx, {
+                                        type: 'bullets',
+                                        items: [...block.items, { text: '', linkLabel: '', linkKey: '' }]
+                                      });
+                                    }}
+                                    className="text-[11px] text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 cursor-pointer pt-1"
+                                  >
+                                    <Plus className="w-3 h-3" /> Add Bullet Item
+                                  </button>
+                                </div>
+                              )}
+
+                              {block.type === 'button' && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-2.5 rounded-lg border border-slate-200">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Button Label</label>
+                                    <input
+                                      type="text"
+                                      value={block.label}
+                                      onChange={e => handleBlockChange(idx, { ...block, label: e.target.value })}
+                                      className="w-full text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600/40"
+                                      placeholder="e.g. See the Highlights"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Link Key</label>
+                                    <select
+                                      value={block.linkKey}
+                                      onChange={e => handleBlockChange(idx, { ...block, linkKey: e.target.value })}
+                                      className="w-full text-xs p-1.5 border border-slate-200 rounded bg-white font-mono"
+                                    >
+                                      {Object.keys(LINK_KEYS_META).map(lk => (
+                                        <option key={lk} value={lk}>{lk}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              )}
+
+                              {block.type === 'note' && (
+                                <input
+                                  type="text"
+                                  value={block.text}
+                                  onChange={e => handleBlockChange(idx, { type: 'note', text: e.target.value })}
+                                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg italic text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-600/30"
+                                  placeholder="e.g. (Yes, that energy is real. Yes, you'll love it here.)"
+                                />
+                              )}
                             </div>
-                          )}
-
-                          {block.type === 'note' && (
-                            <input
-                              type="text"
-                              value={block.text}
-                              onChange={e => handleBlockChange(idx, { type: 'note', text: e.target.value })}
-                              className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg italic text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-600/30"
-                              placeholder="e.g. (Yes, that energy is real. Yes, you'll love it here.)"
-                            />
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
 
-                    {/* Signoff */}
-                    <div className="pt-2">
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Signoff &amp; Signature Text
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={currentTemplate.signoff}
-                        onChange={e => handleTemplateFieldChange('signoff', e.target.value)}
-                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-mono"
-                        placeholder="Thanks & Regards,&#10;Twinkle Verma | FieldAssist HR"
-                      />
-                    </div>
+                        {/* Signoff */}
+                        <div className="pt-2">
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Signoff &amp; Signature Text
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={currentTemplate.signoff || ''}
+                            onChange={e => handleTemplateFieldChange('signoff', e.target.value)}
+                            className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-mono"
+                            placeholder="Thanks & Regards,&#10;Twinkle Verma | FieldAssist HR"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -19,239 +19,238 @@ export const INITIAL_APPROVED_LINKS: LinksSettingsDoc = {
   glassdoor: 'https://www.glassdoor.co.in/Interview/index.htm?countryRedirect=true'
 };
 
-// Initial Approved Copy for stages welcome_7d, culture_5d, comm_3d
+// Initial Approved Copy for all 5 stages: account_ready, welcome_7d, culture_5d, comm_3d, day1_1d
 export const INITIAL_APPROVED_TEMPLATES: Record<string, EmailTemplateDoc> = {
+  account_ready: {
+    id: 'account_ready',
+    subject: 'Your FieldAssist Account is Ready',
+    rawText: `Hi {{Name}},
+
+Welcome to FieldAssist! We are thrilled to have you join our team.
+
+Your candidate onboarding account is now ready. Please use your credentials below to log into the Candidate Portal and complete your Pre-Onboarding Form as soon as possible:
+
+• Your Access Code: {{Access Code}}
+• Candidate Portal Login Link: {{Portal Link}}
+
+What to do next:
+1. Click the portal link above to open your Candidate Portal.
+2. Enter your Access Code ({{Access Code}}) or personal email to log in.
+3. Complete the Pre-Onboarding Form with your personal details, emergency contact, and required document uploads (Aadhaar, PAN, and photos).
+
+Please log in and submit the form as soon as possible. Completing this promptly ensures your background verification, IT asset allocation, and welcome kit are prepared smoothly ahead of your Day 1.
+
+If you have any questions or need support, feel free to reach out to HR (Twinkle Verma at twinkle.verma@fieldassist.com).
+
+We can’t wait to welcome you aboard!
+
+Warm regards,
+Twinkle Verma | FieldAssist HR`
+  },
+
   welcome_7d: {
     id: 'welcome_7d',
     subject: "7 days to go, {{Name}}! Here's the story you're joining",
-    greeting: 'Hi {{Name}},',
-    blocks: [
-      {
-        type: 'paragraph',
-        text: "7 days to go! On {{Date of Joining}}, you'll officially become part of FieldAssist, and we thought you should know the story you're stepping into."
-      },
-      {
-        type: 'heading',
-        text: 'FROM INDIA TO THE WORLD'
-      },
-      {
-        type: 'paragraph',
-        text: 'FieldAssist started by helping CPG brands run smarter field operations. Today, some of the biggest names in the industry look to us for answers on how AI can transform the way field teams work, how retailers are understood, and how decisions get made in real time.'
-      },
-      {
-        type: 'paragraph',
-        text: 'The best proof is FieldVerse.'
-      },
-      {
-        type: 'heading',
-        text: 'WHAT IS FIELDVERSE?'
-      },
-      {
-        type: 'paragraph',
-        text: 'FieldVerse is our invite-only, closed-door forum for senior CPG leaders. It is a room where CXOs talk openly with their peers about AI-led field execution, retail intelligence and real-time decision-making. No sales pitches. No demos. Just honest conversations.'
-      },
-      {
-        type: 'paragraph',
-        text: 'After the success of FieldVerse India, the forum went global:'
-      },
-      {
-        type: 'bullets',
-        items: [
-          { text: 'Dubai' },
-          { text: 'Singapore' },
-          { text: 'Jakarta' },
-          { text: 'Nairobi, Kenya (newest)' },
-          { text: 'London (newest)' }
-        ]
-      },
-      {
-        type: 'heading',
-        text: 'WHY THIS MATTERS TO YOU'
-      },
-      {
-        type: 'paragraph',
-        text: "When leaders from across the world choose to spend their time with us, it says something about the trust we've built and the work you'll be a part of from Day 1."
-      },
-      {
-        type: 'paragraph',
-        text: 'See it for yourself:'
-      },
-      {
-        type: 'paragraph',
-        text: 'FieldVerse highlights:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7507734851148734464'
-      },
-      {
-        type: 'paragraph',
-        text: 'More moments from the forum:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7500455075962744832\nhttps://www.linkedin.com/feed/update/urn:li:activity:7488869657597370368\nhttps://www.linkedin.com/feed/update/urn:li:activity:7486638886018830337'
-      },
-      {
-        type: 'heading',
-        text: 'NEXT UP'
-      },
-      {
-        type: 'paragraph',
-        text: "In the coming days we'll share what life at FieldAssist looks like and what to expect on Day 1."
-      },
-      {
-        type: 'paragraph',
-        text: 'Questions in the meantime? Write to me anytime at twinkle.verma@fieldassist.com.'
-      },
-      {
-        type: 'paragraph',
-        text: "Can't wait to see you!"
-      }
-    ],
-    signoff: 'Warm regards,\nTwinkle Verma | FieldAssist HR'
+    rawText: `Hi {{Name}},
+7 days to go! On {{Date of Joining}}, you'll officially become part of FieldAssist, and we thought you should know the story you're stepping into.
+
+FROM INDIA TO THE WORLD
+FieldAssist started by helping CPG brands run smarter field operations. Today, some of the biggest names in the industry look to us for answers on how AI can transform the way field teams work, how retailers are understood, and how decisions get made in real time.
+The best proof is FieldVerse.
+
+WHAT IS FIELDVERSE?
+FieldVerse is our invite-only, closed-door forum for senior CPG leaders. It is a room where CXOs talk openly with their peers about AI-led field execution, retail intelligence and real-time decision-making. No sales pitches. No demos. Just honest conversations.
+After the success of FieldVerse India, the forum went global:
+- Dubai
+- Singapore
+- Jakarta
+- Nairobi, Kenya (newest)
+- London (newest)
+
+WHY THIS MATTERS TO YOU
+When leaders from across the world choose to spend their time with us, it says something about the trust we've built and the work you'll be a part of from Day 1.
+See it for yourself:
+FieldVerse highlights
+https://www.linkedin.com/feed/update/urn:li:activity:7507734851148734464
+
+More moments from the forum
+https://www.linkedin.com/feed/update/urn:li:activity:7500455075962744832
+https://www.linkedin.com/feed/update/urn:li:activity:7488869657597370368
+https://www.linkedin.com/feed/update/urn:li:activity:7486638886018830337
+
+NEXT UP
+In the coming days we'll share what life at FieldAssist looks like and what to expect on Day 1.
+Questions in the meantime? Write to me anytime at twinkle.verma@fieldassist.com.
+Can't wait to see you!
+
+Warm regards,
+Twinkle Verma | FieldAssist HR`
   },
 
   culture_5d: {
     id: 'culture_5d',
     subject: '5 days to go, {{Name}}! At FieldAssist, everyone gets to build',
-    greeting: 'Hi {{Name}},',
-    blocks: [
-      {
-        type: 'paragraph',
-        text: "5 days to go! {{Date of Joining}} is almost here, and we're counting down with you."
-      },
-      {
-        type: 'paragraph',
-        text: 'Last time, we showed you how far FieldAssist has travelled. Today, we want to show you something that says a lot about how we think.'
-      },
-      {
-        type: 'heading',
-        text: 'AI IS EVERYWHERE. SO BUILDING IS FOR EVERYONE.'
-      },
-      {
-        type: 'paragraph',
-        text: "At FieldAssist, we believe AI is not only for the tech team. It's a tool anyone can pick up. So we created AI-thon, a hackathon-style challenge built especially for our non-tech colleagues."
-      },
-      {
-        type: 'paragraph',
-        text: 'The brief was simple: take an idea of your own, use AI to bring it to life, and build something real.'
-      },
-      {
-        type: 'heading',
-        text: 'WHAT HAPPENED'
-      },
-      {
-        type: 'bullets',
-        items: [
-          { text: 'People from non-tech teams came forward with ideas from their own day-to-day work' },
-          { text: 'They used AI to turn those ideas into working builds, no coding background needed' },
-          { text: 'A panel of judges reviewed every build and picked the best ones' },
-          { text: 'The winners received awards and recognition' },
-          { text: "And the best part: the winning ideas didn't stay on a stage. They were put to use inside the company" }
-        ]
-      },
-      {
-        type: 'heading',
-        text: 'WHAT THIS TELLS YOU ABOUT FIELDASSIST'
-      },
-      {
-        type: 'paragraph',
-        text: "At FieldAssist, a good idea matters more than your job title. If you can spot a problem and imagine a better way, you can build it, and we'll back you."
-      },
-      {
-        type: 'heading',
-        text: 'SEE IT FOR YOURSELF'
-      },
-      {
-        type: 'paragraph',
-        text: 'The latest from AI-thon:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7500126538240245760'
-      },
-      {
-        type: 'paragraph',
-        text: 'More moments from AI-thon:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7495436037582811136\nhttps://www.linkedin.com/feed/update/urn:li:activity:7494054891640741888\nhttps://www.linkedin.com/feed/update/urn:li:activity:7491108371924922368\nhttps://www.linkedin.com/feed/update/urn:li:activity:7485952306807562240\nhttps://www.linkedin.com/feed/update/urn:li:activity:7480251796720861184\nhttps://www.linkedin.com/feed/update/urn:li:activity:7477988434884661249\nhttps://www.linkedin.com/feed/update/urn:li:activity:7474742241740210176\nhttps://www.linkedin.com/feed/update/urn:li:activity:7472989053064224768\nhttps://www.linkedin.com/feed/update/urn:li:activity:7470091441378279425'
-      },
-      {
-        type: 'paragraph',
-        text: 'So start thinking: what would you build?'
-      },
-      {
-        type: 'paragraph',
-        text: "Your next big idea could be the one we all end up using. We can't wait to hear it."
-      },
-      {
-        type: 'paragraph',
-        text: 'See you very soon!'
-      }
-    ],
-    signoff: 'Warm regards,\nTwinkle Verma | FieldAssist HR'
+    rawText: `Hi {{Name}},
+
+5 days to go! {{Date of Joining}} is almost here, and we're counting down with you.
+
+Last time, we showed you how far FieldAssist has travelled. Today, we want to show you something that says a lot about how we think.
+
+AI IS EVERYWHERE. SO BUILDING IS FOR EVERYONE.
+
+At FieldAssist, we believe AI is not only for the tech team. It's a tool anyone can pick up. So we created AI-thon, a hackathon-style challenge built especially for our non-tech colleagues.
+The brief was simple: take an idea of your own, use AI to bring it to life, and build something real.
+
+WHAT HAPPENED
+- People from non-tech teams came forward with ideas from their own day-to-day work
+- They used AI to turn those ideas into working builds, no coding background needed
+- A panel of judges reviewed every build and picked the best ones
+- The winners received awards and recognition
+- And the best part: the winning ideas didn't stay on a stage. They were put to use inside the company
+
+WHAT THIS TELLS YOU ABOUT FIELDASSIST
+At FieldAssist, a good idea matters more than your job title. If you can spot a problem and imagine a better way, you can build it, and we'll back you.
+
+SEE IT FOR YOURSELF
+The latest from AI-thon:
+https://www.linkedin.com/feed/update/urn:li:activity:7500126538240245760
+
+More moments from AI-thon:
+https://www.linkedin.com/feed/update/urn:li:activity:7495436037582811136
+https://www.linkedin.com/feed/update/urn:li:activity:7494054891640741888
+https://www.linkedin.com/feed/update/urn:li:activity:7491108371924922368
+https://www.linkedin.com/feed/update/urn:li:activity:7485952306807562240
+https://www.linkedin.com/feed/update/urn:li:activity:7480251796720861184
+https://www.linkedin.com/feed/update/urn:li:activity:7477988434884661249
+https://www.linkedin.com/feed/update/urn:li:activity:7474742241740210176
+https://www.linkedin.com/feed/update/urn:li:activity:7472989053064224768
+https://www.linkedin.com/feed/update/urn:li:activity:7470091441378279425
+
+So start thinking: what would you build?
+Your next big idea could be the one we all end up using. We can't wait to hear it.
+
+See you very soon!
+
+Warm regards,
+Twinkle Verma | FieldAssist HR`
   },
 
   comm_3d: {
     id: 'comm_3d',
     subject: '3 day to go, {{Name}}! FieldAssist on the world stage and on NDTV Profit',
-    greeting: 'Hi {{Name}},',
-    blocks: [
-      {
-        type: 'paragraph',
-        text: "Just 1 day to go! Tomorrow is {{Date of Joining}}, and before you walk in, we'd like you to see how FieldAssist is showing up, on the global stage and in the national spotlight."
-      },
-      {
-        type: 'heading',
-        text: '1. ON THE GLOBAL STAGE: GROCERYSHOP 2026'
-      },
-      {
-        type: 'paragraph',
-        text: "Groceryshop, held in Las Vegas, is one of the retail industry's most influential global events, bringing together leaders from retail, CPG and consumer brands. FieldAssist took part to make one point: the next big AI opportunity in retail isn't only online. It's inside the store, where most grocery sales still happen."
-      },
-      {
-        type: 'paragraph',
-        text: 'That is where our Perfect Store comes in: the right products, in the right stores, in the right quantities, executed the right way. Doing this consistently across thousands of stores is the hard part. Brands need to know which micromarkets matter, what assortment belongs in each store, how much to stock and where shelf execution is breaking.'
-      },
-      {
-        type: 'paragraph',
-        text: 'At our booth, the team showcased the Agentic Perfect Store, which spots execution gaps, flags what needs attention and guides field teams to the right action faster, turning shelf gaps into sales opportunities. Our leadership also met CPG and retail leaders to discuss what stronger execution unlocks, from productivity and decision velocity to revenue growth.'
-      },
-      {
-        type: 'paragraph',
-        text: 'The message is simple: move from store-level visibility to store-level action, store by store.'
-      },
-      {
-        type: 'paragraph',
-        text: 'Groceryshop 2026 highlights:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7509223401954283520'
-      },
-      {
-        type: 'paragraph',
-        text: 'More from the event:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7506676960077656066\nhttps://www.linkedin.com/feed/update/urn:li:activity:7506321134439669760'
-      },
-      {
-        type: 'heading',
-        text: '2. IN THE NATIONAL SPOTLIGHT: NDTV PROFIT'
-      },
-      {
-        type: 'paragraph',
-        text: "FieldAssist was featured on NDTV Profit's The Great Business Story: Transforming India, a series on the ideas, people and technology shaping how India does business."
-      },
-      {
-        type: 'paragraph',
-        text: 'In a special segment, our Co-Founder & CEO, Divir Tiwari, shared how AI-native Route-to-Market is reshaping CPG, from faster decision-making to smarter last-mile execution. The segment showed how brands can move beyond dashboards and visibility to build intelligent, responsive, execution-led RTM systems, and how FieldAssist helps FMCG and consumer brands turn field intelligence into smarter decisions and stronger execution.'
-      },
-      {
-        type: 'paragraph',
-        text: 'The latest from the segment:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7512467128868868096'
-      },
-      {
-        type: 'paragraph',
-        text: 'More from the feature:\nhttps://www.linkedin.com/feed/update/urn:li:activity:7512041039675781120\nhttps://www.linkedin.com/feed/update/urn:li:activity:7511960782666915840\nhttps://www.linkedin.com/feed/update/urn:li:activity:7511422371392794624'
-      },
-      {
-        type: 'paragraph',
-        text: 'Tomorrow, you become part of this story.'
-      },
-      {
-        type: 'paragraph',
-        text: 'Any last-minute questions? Write to me anytime at twinkle.verma@fieldassist.com.'
-      }
-    ],
-    signoff: 'Warm regards,\nTwinkle Verma | FieldAssist HR'
+    rawText: `Hi {{Name}},
+
+Just 3 day to go! Tomorrow is {{Date of Joining}}, and before you walk in, we'd like you to see how FieldAssist is showing up, on the global stage and in the national spotlight.
+
+1. ON THE GLOBAL STAGE: GROCERYSHOP 2026
+
+Groceryshop, held in Las Vegas, is one of the retail industry's most influential global events, bringing together leaders from retail, CPG and consumer brands. FieldAssist took part to make one point: the next big AI opportunity in retail isn't only online. It's inside the store, where most grocery sales still happen.
+
+That is where our Perfect Store comes in: the right products, in the right stores, in the right quantities, executed the right way. Doing this consistently across thousands of stores is the hard part. Brands need to know which micromarkets matter, what assortment belongs in each store, how much to stock and where shelf execution is breaking.
+
+At our booth, the team showcased the Agentic Perfect Store, which spots execution gaps, flags what needs attention and guides field teams to the right action faster, turning shelf gaps into sales opportunities. Our leadership also met CPG and retail leaders to discuss what stronger execution unlocks, from productivity and decision velocity to revenue growth.
+
+The message is simple: move from store-level visibility to store-level action, store by store.
+
+Groceryshop 2026 highlights:
+https://www.linkedin.com/feed/update/urn:li:activity:7509223401954283520
+
+More from the event:
+https://www.linkedin.com/feed/update/urn:li:activity:7506676960077656066
+https://www.linkedin.com/feed/update/urn:li:activity:7506321134439669760
+
+2. IN THE NATIONAL SPOTLIGHT: NDTV PROFIT
+
+FieldAssist was featured on NDTV Profit's The Great Business Story: Transforming India, a series on the ideas, people and technology shaping how India does business.
+
+In a special segment, our Co-Founder & CEO, Divir Tiwari, shared how AI-native Route-to-Market is reshaping CPG, from faster decision-making to smarter last-mile execution. The segment showed how brands can move beyond dashboards and visibility to build intelligent, responsive, execution-led RTM systems, and how FieldAssist helps FMCG and consumer brands turn field intelligence into smarter decisions and stronger execution.
+
+The latest from the segment:
+https://www.linkedin.com/feed/update/urn:li:activity:7512467128868868096
+
+More from the feature:
+https://www.linkedin.com/feed/update/urn:li:activity:7512041039675781120
+https://www.linkedin.com/feed/update/urn:li:activity:7511960782666915840
+https://www.linkedin.com/feed/update/urn:li:activity:7511422371392794624
+
+Tomorrow, you become part of this story.
+
+Any last-minute questions? Write to me anytime at twinkle.verma@fieldassist.com.
+
+Warm regards,
+Twinkle Verma | FieldAssist HR`
+  },
+
+  day1_1d: {
+    id: 'day1_1d',
+    subject: "Tomorrow is Day 1, {{Name}}! Here's Everything You Need 🚀",
+    rawText: `Hi {{Name}},
+
+Tomorrow is Day 1! The countdown is almost over, and we're excited to welcome you to FieldAssist.
+
+YOUR DAY 1 DETAILS
+
+Joining Date: {{Date of Joining}}
+Reporting Time: {{Reporting Time}}
+Location: {{Location}}
+Address / Instructions: {{Address}}
+Dress Code: {{Dress Code}}
+
+WHAT YOUR DAY LOOKS LIKE
+
+- 11:00 AM: Arrival & Welcome
+- 11:20 AM: Laptop & Welcome Kit
+- 11:50 AM: HR Induction (get familiar with FieldAssist, our culture & policies)
+- 01:15 PM: Welcome Lunch (lunch with new joiners and team members)
+- 02:15 PM: Pre-Onboarding Formalities (complete remaining joining formalities)
+- 03:00 PM: Buddy Meet-up
+- 03:30 PM: Office Tour
+
+YOUR CANDIDATE ONBOARDING PORTAL
+
+You can view your onboarding checklist and campus details directly in your portal:
+{{Portal Link}}
+Access Code: {{Access Code}}
+
+A QUICK NOTE
+
+You don't need to carry any physical documents tomorrow. All required documents are collected online, and the remaining employment formalities will be completed through Keka. Just bring yourself, your enthusiasm, and any questions you may have.
+
+A GLIMPSE OF THE COMPANY YOU'RE JOINING
+
+GROCERYSHOP 2026, LAS VEGAS
+Groceryshop is one of the retail industry's most influential global events, bringing together leaders from retail, CPG and consumer brands. FieldAssist took part to make one point: the next big AI opportunity in retail isn't only online, it's inside the store, where most grocery sales still happen. At our booth, the team showcased the Agentic Perfect Store, which spots execution gaps, flags what needs attention and guides field teams to the right action faster, turning shelf gaps into sales opportunities. Our message is simple: move from store-level visibility to store-level action, store by store.
+
+Groceryshop 2026 highlights:
+https://www.linkedin.com/feed/update/urn:li:activity:7509223401954283520
+
+More from the event:
+https://www.linkedin.com/feed/update/urn:li:activity:7506676960077656066
+https://www.linkedin.com/feed/update/urn:li:activity:7506321134439669760
+
+FIELDASSIST ON NDTV PROFIT
+FieldAssist was featured on NDTV Profit's The Great Business Story: Transforming India. In a special segment, our Co-Founder & CEO, Divir Tiwari, shared how AI-native Route-to-Market is reshaping CPG, from faster decision-making to smarter last-mile execution, and how brands can move beyond dashboards and visibility to build intelligent, execution-led RTM systems.
+
+The latest from the segment:
+https://www.linkedin.com/feed/update/urn:li:activity:7512467128868868096
+
+More from the feature:
+https://www.linkedin.com/feed/update/urn:li:activity:7512041039675781120
+https://www.linkedin.com/feed/update/urn:li:activity:7511960782666915840
+https://www.linkedin.com/feed/update/urn:li:activity:7511422371392794624
+
+Tomorrow, you become part of this story.
+
+Any last-minute questions? Write to me anytime at twinkle.verma@fieldassist.com.
+
+Warm regards,
+Twinkle Verma | FieldAssist HR`
   }
 };
 
 // In-memory cache synced with localStorage & Firestore
-const STORAGE_KEY_LINKS = 'fieldassist_links_doc_v2';
-const STORAGE_KEY_TEMPLATES = 'fieldassist_templates_doc_v3';
+const STORAGE_KEY_LINKS = 'fieldassist_links_doc_v3';
+const STORAGE_KEY_TEMPLATES = 'fieldassist_templates_doc_v7';
 
 let cachedLinks: LinksSettingsDoc | null = null;
 let cachedTemplates: Record<string, EmailTemplateDoc> | null = null;
@@ -259,10 +258,12 @@ let cachedTemplates: Record<string, EmailTemplateDoc> | null = null;
 export function getCachedLinks(): LinksSettingsDoc {
   if (cachedLinks) return cachedLinks;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY_LINKS);
-    if (saved) {
-      cachedLinks = { ...INITIAL_APPROVED_LINKS, ...JSON.parse(saved) };
-      return cachedLinks;
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY_LINKS);
+      if (saved) {
+        cachedLinks = { ...INITIAL_APPROVED_LINKS, ...JSON.parse(saved) };
+        return cachedLinks;
+      }
     }
   } catch (e) {
     console.error('Error loading links from localStorage:', e);
@@ -274,10 +275,12 @@ export function getCachedLinks(): LinksSettingsDoc {
 export function getCachedTemplates(): Record<string, EmailTemplateDoc> {
   if (cachedTemplates) return cachedTemplates;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY_TEMPLATES);
-    if (saved) {
-      cachedTemplates = { ...INITIAL_APPROVED_TEMPLATES, ...JSON.parse(saved) };
-      return cachedTemplates;
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY_TEMPLATES);
+      if (saved) {
+        cachedTemplates = { ...INITIAL_APPROVED_TEMPLATES, ...JSON.parse(saved) };
+        return cachedTemplates;
+      }
     }
   } catch (e) {
     console.error('Error loading templates from localStorage:', e);
@@ -314,7 +317,20 @@ export async function syncEmailStoreWithFirestore(): Promise<{
     // 2. Sync Templates with Firestore
     const remoteTemplates = await fetchEmailTemplatesFromFirestore();
     if (remoteTemplates && Object.keys(remoteTemplates).length > 0) {
-      templates = { ...INITIAL_APPROVED_TEMPLATES, ...remoteTemplates };
+      const merged: Record<string, EmailTemplateDoc> = { ...INITIAL_APPROVED_TEMPLATES };
+      for (const [key, remoteTmpl] of Object.entries(remoteTemplates)) {
+        if (remoteTmpl) {
+          // If remote template was saved in the old block format or without rawText, upgrade it to the new approved copy
+          if (!remoteTmpl.rawText && INITIAL_APPROVED_TEMPLATES[key]?.rawText) {
+            merged[key] = INITIAL_APPROVED_TEMPLATES[key];
+            // Update Firestore with the new approved copy
+            await saveEmailTemplateToFirestore(key, INITIAL_APPROVED_TEMPLATES[key]);
+          } else {
+            merged[key] = { ...INITIAL_APPROVED_TEMPLATES[key], ...remoteTmpl };
+          }
+        }
+      }
+      templates = merged;
     } else {
       // Seed Firestore with initial templates
       for (const [stageKey, tmpl] of Object.entries(INITIAL_APPROVED_TEMPLATES)) {
@@ -324,7 +340,9 @@ export async function syncEmailStoreWithFirestore(): Promise<{
     }
     cachedTemplates = templates;
     try {
-      localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(templates));
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(templates));
+      }
     } catch {}
   } catch (err) {
     console.warn('Firestore sync for email store encountered error; fallback to local cache:', err);
@@ -339,7 +357,9 @@ export async function syncEmailStoreWithFirestore(): Promise<{
 export async function updateStoredLinks(links: LinksSettingsDoc): Promise<void> {
   cachedLinks = { ...links };
   try {
-    localStorage.setItem(STORAGE_KEY_LINKS, JSON.stringify(links));
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY_LINKS, JSON.stringify(links));
+    }
   } catch {}
   await saveLinksToFirestore(links);
 }
@@ -351,7 +371,9 @@ export async function updateStoredTemplate(stageKey: string, template: EmailTemp
   if (!cachedTemplates) cachedTemplates = getCachedTemplates();
   cachedTemplates[stageKey] = { ...template, id: stageKey };
   try {
-    localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(cachedTemplates));
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(cachedTemplates));
+    }
   } catch {}
   await saveEmailTemplateToFirestore(stageKey, template);
 }

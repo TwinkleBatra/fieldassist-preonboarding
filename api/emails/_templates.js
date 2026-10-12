@@ -133,192 +133,338 @@ ${FOOTER_TEXT}`;
   </div>
 </div>`;
   } else if (stageKey === 'welcome_7d') {
-    subject = 'Welcome to FieldAssist – Your Onboarding Journey Starts Here!';
-    const ammoPrereadText = ammoPrereadUrl ? ammoPrereadUrl : '[TODO: Missing link (ammoPreread)]';
-    const ammoPrereadHtml = ammoPrereadUrl
-      ? `<a href="${ammoPrereadUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; text-decoration: underline;">AMMO Pre-Read Guide</a>`
-      : `AMMO Pre-Read Guide <span style="background-color: #fee2e2; color: #dc2626; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; border: 1px solid #f87171;">TODO: Missing link (ammoPreread)</span>`;
-
+    subject = `7 days to go, ${firstName}! Here's the story you're joining`;
     bodyText = `Hi ${firstName},
+7 days to go! On ${joiningDateFormatted}, you'll officially become part of FieldAssist, and we thought you should know the story you're stepping into.
 
-Congratulations once again—and a warm welcome to FieldAssist!
+FROM INDIA TO THE WORLD
+FieldAssist started by helping CPG brands run smarter field operations. Today, some of the biggest names in the industry look to us for answers on how AI can transform the way field teams work, how retailers are understood, and how decisions get made in real time.
+The best proof is FieldVerse.
 
-We’re thrilled to have you as part of our growing team. Your journey with us is just beginning, and we’re committed to making your onboarding experience smooth, engaging, and memorable.
+WHAT IS FIELDVERSE?
+FieldVerse is our invite-only, closed-door forum for senior CPG leaders. It is a room where CXOs talk openly with their peers about AI-led field execution, retail intelligence and real-time decision-making. No sales pitches. No demos. Just honest conversations.
+After the success of FieldVerse India, the forum went global:
+- Dubai
+- Singapore
+- Jakarta
+- Nairobi, Kenya (newest)
+- London (newest)
 
-Over the next few days, we’ll be sharing important resources and information to help you prepare for your joining.
+WHY THIS MATTERS TO YOU
+When leaders from across the world choose to spend their time with us, it says something about the trust we've built and the work you'll be a part of from Day 1.
+See it for yourself:
+FieldVerse highlights
+https://www.linkedin.com/feed/update/urn:li:activity:7507734851148734464
 
-For now, here’s what you can expect:
-• Access to our AMMO pre-read, to help you get familiar with FieldAssist: ${ammoPrereadText}
-• Candidate Pre-Onboarding Portal: ${portalUrl} (Access Code: ${accessCode})
+More moments from the forum
+https://www.linkedin.com/feed/update/urn:li:activity:7500455075962744832
+https://www.linkedin.com/feed/update/urn:li:activity:7488869657597370368
+https://www.linkedin.com/feed/update/urn:li:activity:7486638886018830337
 
-In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at twinkle.verma@fieldassist.com).
+NEXT UP
+In the coming days we'll share what life at FieldAssist looks like and what to expect on Day 1.
+Questions in the meantime? Write to me anytime at twinkle.verma@fieldassist.com.
+Can't wait to see you!
 
-Cheers!
-
-Thanks & Regards,
+Warm regards,
 Twinkle Verma | FieldAssist HR
+
+Candidate Portal: ${portalUrl}
+Access Code: ${accessCode}
 ${FOOTER_TEXT}`;
 
     bodyHtml = `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
   <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 24px 32px; text-align: left;">
     <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">FieldAssist Onboarding</span>
-    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">Welcome to FieldAssist!</h1>
+    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">7 days to go, ${firstName}! Here's the story you're joining</h1>
   </div>
   <div style="padding: 32px;">
     <p style="margin-top: 0; font-size: 16px;">Hi <strong>${firstName}</strong>,</p>
-    <p>Congratulations once again—and a warm welcome to FieldAssist!</p>
-    <p>We’re thrilled to have you as part of our growing team. Your journey with us is just beginning, and we’re committed to making your onboarding experience smooth, engaging, and memorable.</p>
-    <p>Over the next few days, we’ll be sharing important resources and information to help you prepare for your joining on <strong>${joiningDateFormatted}</strong>.</p>
+    <p><strong>7 days to go!</strong> On <strong>${joiningDateFormatted}</strong>, you'll officially become part of FieldAssist, and we thought you should know the story you're stepping into.</p>
+    
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">FROM INDIA TO THE WORLD</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">FieldAssist started by helping CPG brands run smarter field operations. Today, some of the biggest names in the industry look to us for answers on how AI can transform the way field teams work, how retailers are understood, and how decisions get made in real time.</p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">The best proof is <strong>FieldVerse</strong>.</p>
+
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">WHAT IS FIELDVERSE?</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">FieldVerse is our invite-only, closed-door forum for senior CPG leaders. It is a room where CXOs talk openly with their peers about AI-led field execution, retail intelligence and real-time decision-making. No sales pitches. No demos. Just honest conversations.</p>
+    <p style="margin: 8px 0 4px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">After the success of FieldVerse India, the forum went global:</p>
+    <ul style="padding-left: 20px; margin: 8px 0 16px 0; font-size: 14px; color: #334155; line-height: 1.7;">
+      <li>Dubai</li>
+      <li>Singapore</li>
+      <li>Jakarta</li>
+      <li>Nairobi, Kenya (newest)</li>
+      <li>London (newest)</li>
+    </ul>
+
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">WHY THIS MATTERS TO YOU</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">When leaders from across the world choose to spend their time with us, it says something about the trust we've built and the work you'll be a part of from Day 1.</p>
     
     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <p style="font-weight: bold; margin: 0 0 8px 0; color: #1e1b4b;">Here’s what you can explore today:</p>
-      <ul style="padding-left: 20px; margin: 0 0 16px 0;">
-        <li style="margin-bottom: 6px;">Access our ${ammoPrereadHtml} to get familiar with FieldAssist, our story, and our product impact.</li>
+      <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e1b4b; font-size: 14px;">See it for yourself:</p>
+      <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #4338ca;">FieldVerse highlights:</p>
+      <p style="margin: 0 0 12px 0; font-size: 13px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7507734851148734464" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7507734851148734464</a></p>
+      
+      <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #4338ca;">More moments from the forum:</p>
+      <ul style="padding-left: 18px; margin: 0; font-size: 13px; line-height: 1.7;">
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7500455075962744832" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7500455075962744832</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7488869657597370368" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7488869657597370368</a></li>
+        <li><a href="https://www.linkedin.com/feed/update/urn:li:activity:7486638886018830337" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7486638886018830337</a></li>
       </ul>
-      <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
-        <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">Open Your Candidate Portal &rarr;</a>
-        <div style="margin-top: 6px; font-size: 12px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
+    </div>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 24px 0;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">
+        FieldAssist Candidate Portal
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <a href="${portalUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13px;">
+            Open Your Candidate Portal &rarr;
+          </a>
+        </div>
+        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; color: #475569;">
+          Access Code: <strong style="font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 14px; color: #4338ca; letter-spacing: 1px;">${accessCode}</strong>
+        </div>
       </div>
     </div>
 
-    <p style="font-size: 14px; color: #334155;">
-      In case you have any questions or need support at any stage, feel free to reach out to HR (Twinkle Verma at <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@fieldassist.com</a>).
-    </p>
-    <p style="margin-top: 24px;">Cheers!</p>
-    <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">NEXT UP</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">In the coming days we'll share what life at FieldAssist looks like and what to expect on Day 1.</p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">Questions in the meantime? Write to me anytime at <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@fieldassist.com</a>.</p>
+    <p style="margin: 8px 0 20px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">Can't wait to see you!</p>
+
+    <p style="margin-top: 24px; margin-bottom: 0;">Warm regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
     ${FOOTER_HTML}
   </div>
 </div>`;
   } else if (stageKey === 'culture_5d') {
-    subject = 'You + FieldAssist = Let’s Get Started!';
+    subject = `5 days to go, ${firstName}! At FieldAssist, everyone gets to build`;
     bodyText = `Hi ${firstName},
 
-We’re counting down the days till you officially become a part of the FieldAssist tribe, but we couldn’t wait to give you a glimpse of what’s in store.
+5 days to go! ${joiningDateFormatted} is almost here, and we're counting down with you.
 
-Before your Day 1, we’d love to give you a peek into what it feels like to be at FA.
+Last time, we showed you how far FieldAssist has travelled. Today, we want to show you something that says a lot about how we think.
 
-A Culture that Walks the Talk:
-• 4× Great Place to Work-Certified – Our culture isn’t a tagline. It’s how we treat people, lead teams, and celebrate progress.
-• Bootstrapped & Profitable – We’ve built FA on passion, not funding. And we’ve grown year after year with agility and intention.
-• Voices from the Inside – Hear directly from our teammates about what makes FA special.
+AI IS EVERYWHERE. SO BUILDING IS FOR EVERYONE.
 
-Culture in Motion: Our Goa Offsite:
-Earlier this year, we brought the entire company to Goa, not just for fun, but for alignment, celebration, and forward thinking.
-From powerful strategy sessions to sunset vibes, it was the perfect mix of ambition and culture.
+At FieldAssist, we believe AI is not only for the tech team. It's a tool anyone can pick up. So we created AI-thon, a hackathon-style challenge built especially for our non-tech colleagues.
+The brief was simple: take an idea of your own, use AI to bring it to life, and build something real.
+WHAT HAPPENED
+- People from non-tech teams came forward with ideas from their own day-to-day work
+- They used AI to turn those ideas into working builds, no coding background needed
+- A panel of judges reviewed every build and picked the best ones
+- The winners received awards and recognition
+- And the best part: the winning ideas didn't stay on a stage. They were put to use inside the company
+WHAT THIS TELLS YOU ABOUT FIELDASSIST
+At FieldAssist, a good idea matters more than your job title. If you can spot a problem and imagine a better way, you can build it, and we'll back you.
+SEE IT FOR YOURSELF
+The latest from AI-thon:
+https://www.linkedin.com/feed/update/urn:li:activity:7500126538240245760
 
-See the Highlights: ${goaHighlightsUrl}
-(Yes, that energy is real. Yes, you’ll love it here.)
+More moments from AI-thon:
+https://www.linkedin.com/feed/update/urn:li:activity:7495436037582811136
+https://www.linkedin.com/feed/update/urn:li:activity:7494054891640741888
+https://www.linkedin.com/feed/update/urn:li:activity:7491108371924922368
+https://www.linkedin.com/feed/update/urn:li:activity:7485952306807562240
+https://www.linkedin.com/feed/update/urn:li:activity:7480251796720861184
+https://www.linkedin.com/feed/update/urn:li:activity:7477988434884661249
+https://www.linkedin.com/feed/update/urn:li:activity:7474742241740210176
+https://www.linkedin.com/feed/update/urn:li:activity:7472989053064224768
+https://www.linkedin.com/feed/update/urn:li:activity:7470091441378279425
 
-• Check your Onboarding Checklist: ${portalUrl} (Access Code: ${accessCode})
-
-Here’s to a journey full of impact, learning, and growth.
-
-Thanks & Regards,
+So start thinking: what would you build?
+Your next big idea could be the one we all end up using. We can't wait to hear it.
+See you very soon!
+Warm regards,
 Twinkle Verma | FieldAssist HR
+
+Candidate Portal: ${portalUrl}
+Access Code: ${accessCode}
 ${FOOTER_TEXT}`;
 
     bodyHtml = `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
   <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 24px 32px; text-align: left;">
     <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">Life at FieldAssist</span>
-    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">You + FieldAssist = Let’s Get Started!</h1>
+    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">5 days to go, ${firstName}! At FieldAssist, everyone gets to build</h1>
   </div>
   <div style="padding: 32px;">
     <p style="margin-top: 0; font-size: 16px;">Hi <strong>${firstName}</strong>,</p>
-    <p>We’re counting down the days till you officially become a part of the FieldAssist tribe, but we couldn’t wait to give you a glimpse of what’s in store.</p>
-    <p>Before your Day 1, we’d love to give you a peek into what it feels like to be at FA.</p>
+    <p><strong>5 days to go!</strong> ${joiningDateFormatted} is almost here, and we're counting down with you.</p>
+    <p>Last time, we showed you how far FieldAssist has travelled. Today, we want to show you something that says a lot about how we think.</p>
     
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">AI IS EVERYWHERE. SO BUILDING IS FOR EVERYONE.</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">At FieldAssist, we believe AI is not only for the tech team. It's a tool anyone can pick up. So we created <strong>AI-thon</strong>, a hackathon-style challenge built especially for our non-tech colleagues.</p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">The brief was simple: take an idea of your own, use AI to bring it to life, and build something real.</p>
+
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">WHAT HAPPENED</h3>
+    <ul style="padding-left: 20px; margin: 8px 0 16px 0; font-size: 14px; color: #334155; line-height: 1.7;">
+      <li>People from non-tech teams came forward with ideas from their own day-to-day work</li>
+      <li>They used AI to turn those ideas into working builds, no coding background needed</li>
+      <li>A panel of judges reviewed every build and picked the best ones</li>
+      <li>The winners received awards and recognition</li>
+      <li>And the best part: the winning ideas didn't stay on a stage. They were put to use inside the company</li>
+    </ul>
+
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">WHAT THIS TELLS YOU ABOUT FIELDASSIST</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">At FieldAssist, a good idea matters more than your job title. If you can spot a problem and imagine a better way, you can build it, and we'll back you.</p>
+
     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <h3 style="color: #1e1b4b; margin: 0 0 10px 0; font-size: 15px;">A Culture that Walks the Talk</h3>
-      <ul style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.7;">
-        <li style="margin-bottom: 6px;"><strong>4× Great Place to Work-Certified</strong> – Our culture isn’t a tagline. It’s how we treat people, lead teams, and celebrate progress.</li>
-        <li style="margin-bottom: 6px;"><strong>Bootstrapped &amp; Profitable</strong> – We’ve built FA on passion, not funding. And we’ve grown year after year with agility and intention.</li>
-        <li style="margin-bottom: 6px;"><strong>Voices from the Inside</strong> – Hear directly from our teammates about what makes FA special.</li>
+      <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e1b4b; font-size: 14px;">SEE IT FOR YOURSELF</p>
+      <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #4338ca;">The latest from AI-thon:</p>
+      <p style="margin: 0 0 12px 0; font-size: 13px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7500126538240245760" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7500126538240245760</a></p>
+      
+      <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #4338ca;">More moments from AI-thon:</p>
+      <ul style="padding-left: 18px; margin: 0; font-size: 13px; line-height: 1.7;">
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7495436037582811136" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7495436037582811136</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7494054891640741888" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7494054891640741888</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7491108371924922368" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7491108371924922368</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7485952306807562240" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7485952306807562240</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7480251796720861184" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7480251796720861184</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7477988434884661249" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7477988434884661249</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7474742241740210176" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7474742241740210176</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7472989053064224768" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7472989053064224768</a></li>
+        <li><a href="https://www.linkedin.com/feed/update/urn:li:activity:7470091441378279425" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7470091441378279425</a></li>
       </ul>
     </div>
 
-    <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <h3 style="color: #312e81; margin: 0 0 8px 0; font-size: 15px;">Culture in Motion: Our Goa Offsite</h3>
-      <p style="font-size: 14px; margin: 0 0 12px 0;">Earlier this year, we brought the entire company to Goa, not just for fun, but for alignment, celebration, and forward thinking. From powerful strategy sessions to sunset vibes, it was the perfect mix of ambition and culture.</p>
-      <p style="margin: 0 0 10px 0;">
-        <a href="${goaHighlightsUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">See the Highlights &rarr;</a>
-      </p>
-      <p style="font-style: italic; color: #64748b; font-size: 12px; margin: 0;">(Yes, that energy is real. Yes, you’ll love it here.)</p>
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 24px 0;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">
+        FieldAssist Candidate Portal
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <a href="${portalUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13px;">
+            Open Your Candidate Portal &rarr;
+          </a>
+        </div>
+        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; color: #475569;">
+          Access Code: <strong style="font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 14px; color: #4338ca; letter-spacing: 1px;">${accessCode}</strong>
+        </div>
+      </div>
     </div>
 
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
-      <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: bold; color: #1e1b4b;">Pre-Onboarding Status:</p>
-      <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 9px 18px; border-radius: 6px; font-weight: bold; font-size: 12px;">View Candidate Portal &rarr;</a>
-      <div style="margin-top: 6px; font-size: 11px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
-    </div>
-    
-    <p style="margin-top: 24px;">Here’s to a journey full of impact, learning, and growth.</p>
-    <p style="margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
+    <p style="margin: 16px 0 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">So start thinking: <strong>what would you build?</strong></p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">Your next big idea could be the one we all end up using. We can't wait to hear it.</p>
+    <p style="margin: 8px 0 20px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">See you very soon!</p>
+
+    <p style="margin-top: 24px; margin-bottom: 0;">Warm regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
     ${FOOTER_HTML}
   </div>
 </div>`;
   } else if (stageKey === 'comm_3d') {
-    subject = 'Getting Started at FieldAssist – Resources to Know Us Better!';
+    subject = `3 day to go, ${firstName}! FieldAssist on the world stage and on NDTV Profit`;
     bodyText = `Hi ${firstName},
 
-Hope you enjoyed the sneak peek we shared earlier about life at FieldAssist — that was just the beginning!
+Just 3 day to go! Tomorrow is ${joiningDateFormatted}, and before you walk in, we'd like you to see how FieldAssist is showing up, on the global stage and in the national spotlight.
 
-Your journey with us is just getting started, and we’re here to ensure it begins on a smooth and exciting note.
+1. ON THE GLOBAL STAGE: GROCERYSHOP 2026
 
-To help you get familiar with our culture, people, and what makes FA a great place to work, we’ve put together a few useful resources just for you:
+Groceryshop, held in Las Vegas, is one of the retail industry's most influential global events, bringing together leaders from retail, CPG and consumer brands. FieldAssist took part to make one point: the next big AI opportunity in retail isn't only online. It's inside the store, where most grocery sales still happen.
 
-• FA Newsletter - Stay updated with all the exciting happenings: ${newsletterUrl}
-• LinkedIn Page - Follow us for company updates and stories from the field: ${linkedinUrl}
-• Instagram - A peek into our people, events, and behind-the-scenes moments: ${instagramUrl}
-• Latest Pathfinder's video - Hear stories straight from our employees about their growth and impact: ${pathfinderVideoUrl}
+That is where our Perfect Store comes in: the right products, in the right stores, in the right quantities, executed the right way. Doing this consistently across thousands of stores is the hard part. Brands need to know which micromarkets matter, what assortment belongs in each store, how much to stock and where shelf execution is breaking.
 
-• Your Pre-Onboarding Checklist & Day 1 Info: ${portalUrl} (Access Code: ${accessCode})
+At our booth, the team showcased the Agentic Perfect Store, which spots execution gaps, flags what needs attention and guides field teams to the right action faster, turning shelf gaps into sales opportunities. Our leadership also met CPG and retail leaders to discuss what stronger execution unlocks, from productivity and decision velocity to revenue growth.
 
-If you have any questions, feel free to reach out to HR or reply to this email.
+The message is simple: move from store-level visibility to store-level action, store by store.
 
-You can also rate us at:
-• AmbitionBox: ${ambitionBoxUrl}
-• Glassdoor: ${glassdoorUrl}
+Groceryshop 2026 highlights:
+https://www.linkedin.com/feed/update/urn:li:activity:7509223401954283520
 
-Thanks & Regards,
+More from the event:
+https://www.linkedin.com/feed/update/urn:li:activity:7506676960077656066
+https://www.linkedin.com/feed/update/urn:li:activity:7506321134439669760
+
+2. IN THE NATIONAL SPOTLIGHT: NDTV PROFIT
+
+FieldAssist was featured on NDTV Profit's The Great Business Story: Transforming India, a series on the ideas, people and technology shaping how India does business.
+
+In a special segment, our Co-Founder & CEO, Divir Tiwari, shared how AI-native Route-to-Market is reshaping CPG, from faster decision-making to smarter last-mile execution. The segment showed how brands can move beyond dashboards and visibility to build intelligent, responsive, execution-led RTM systems, and how FieldAssist helps FMCG and consumer brands turn field intelligence into smarter decisions and stronger execution.
+
+The latest from the segment:
+https://www.linkedin.com/feed/update/urn:li:activity:7512467128868868096
+
+More from the feature:
+https://www.linkedin.com/feed/update/urn:li:activity:7512041039675781120
+https://www.linkedin.com/feed/update/urn:li:activity:7511960782666915840
+https://www.linkedin.com/feed/update/urn:li:activity:7511422371392794624
+
+Tomorrow, you become part of this story.
+
+Any last-minute questions? Write to me anytime at twinkle.verma@fieldassist.com.
+
+Warm regards,
 Twinkle Verma | FieldAssist HR
+
+Candidate Portal: ${portalUrl}
+Access Code: ${accessCode}
 ${FOOTER_TEXT}`;
 
     bodyHtml = `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
   <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 24px 32px; text-align: left;">
-    <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">FieldAssist Resources</span>
-    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">Getting Started at FieldAssist</h1>
+    <span style="color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">FieldAssist Spotlight</span>
+    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px; font-weight: 800;">3 day to go, ${firstName}! FieldAssist on the world stage and on NDTV Profit</h1>
   </div>
   <div style="padding: 32px;">
     <p style="margin-top: 0; font-size: 16px;">Hi <strong>${firstName}</strong>,</p>
-    <p>Hope you enjoyed the sneak peek we shared earlier about life at FieldAssist — that was just the beginning!</p>
-    <p>Your journey with us is just getting started, and we’re here to ensure it begins on a smooth and exciting note.</p>
-    <p>To help you get familiar with our culture, people, and what makes FA a great place to work, we’ve put together a few useful resources just for you:</p>
+    <p><strong>Just 3 day to go!</strong> Tomorrow is <strong>${joiningDateFormatted}</strong>, and before you walk in, we'd like you to see how FieldAssist is showing up, on the global stage and in the national spotlight.</p>
     
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">1. ON THE GLOBAL STAGE: GROCERYSHOP 2026</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">Groceryshop, held in Las Vegas, is one of the retail industry's most influential global events, bringing together leaders from retail, CPG and consumer brands. FieldAssist took part to make one point: the next big AI opportunity in retail isn't only online. It's inside the store, where most grocery sales still happen.</p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">That is where our <strong>Perfect Store</strong> comes in: the right products, in the right stores, in the right quantities, executed the right way. Doing this consistently across thousands of stores is the hard part. Brands need to know which micromarkets matter, what assortment belongs in each store, how much to stock and where shelf execution is breaking.</p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">At our booth, the team showcased the Agentic Perfect Store, which spots execution gaps, flags what needs attention and guides field teams to the right action faster, turning shelf gaps into sales opportunities. Our leadership also met CPG and retail leaders to discuss what stronger execution unlocks, from productivity and decision velocity to revenue growth.</p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">The message is simple: move from store-level visibility to store-level action, store by store.</p>
+
     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-      <ul style="padding-left: 20px; margin: 0 0 16px 0; line-height: 1.8; font-size: 14px;">
-        <li><strong>FA Newsletter</strong> - Stay updated with all the exciting happenings! <a href="${newsletterUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Read Newsletter]</a></li>
-        <li><strong>LinkedIn Page</strong> - Follow us for company updates and stories from the field: <a href="${linkedinUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Visit LinkedIn]</a></li>
-        <li><strong>Instagram</strong> - A peek into our people, events, and behind-the-scenes moments: <a href="${instagramUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Follow Instagram]</a></li>
-        <li><strong>Latest Pathfinder's video</strong> - Hear stories straight from our employees about their growth and impact: <a href="${pathfinderVideoUrl}" target="_blank" style="color: #4f46e5; font-weight: bold;">[Watch Video]</a></li>
+      <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e1b4b; font-size: 14px;">Groceryshop 2026 highlights:</p>
+      <p style="margin: 0 0 12px 0; font-size: 13px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7509223401954283520" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7509223401954283520</a></p>
+      
+      <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e1b4b; font-size: 14px;">More from the event:</p>
+      <ul style="padding-left: 18px; margin: 0; font-size: 13px; line-height: 1.7;">
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7506676960077656066" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7506676960077656066</a></li>
+        <li><a href="https://www.linkedin.com/feed/update/urn:li:activity:7506321134439669760" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7506321134439669760</a></li>
       </ul>
-      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
-        <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">View Pre-Onboarding Portal &rarr;</a>
-        <div style="margin-top: 6px; font-size: 12px; color: #64748b;">Access Code: <strong style="font-family: monospace; color: #4338ca;">${accessCode}</strong></div>
+    </div>
+
+    <h3 style="color: #1e1b4b; font-size: 15px; font-weight: 800; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.03em;">2. IN THE NATIONAL SPOTLIGHT: NDTV PROFIT</h3>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">FieldAssist was featured on NDTV Profit's <em>The Great Business Story: Transforming India</em>, a series on the ideas, people and technology shaping how India does business.</p>
+    <p style="margin: 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">In a special segment, our Co-Founder &amp; CEO, Divir Tiwari, shared how AI-native Route-to-Market is reshaping CPG, from faster decision-making to smarter last-mile execution. The segment showed how brands can move beyond dashboards and visibility to build intelligent, responsive, execution-led RTM systems, and how FieldAssist helps FMCG and consumer brands turn field intelligence into smarter decisions and stronger execution.</p>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
+      <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e1b4b; font-size: 14px;">The latest from the segment:</p>
+      <p style="margin: 0 0 12px 0; font-size: 13px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7512467128868868096" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7512467128868868096</a></p>
+      
+      <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e1b4b; font-size: 14px;">More from the feature:</p>
+      <ul style="padding-left: 18px; margin: 0; font-size: 13px; line-height: 1.7;">
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7512041039675781120" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7512041039675781120</a></li>
+        <li style="margin-bottom: 4px;"><a href="https://www.linkedin.com/feed/update/urn:li:activity:7511960782666915840" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7511960782666915840</a></li>
+        <li><a href="https://www.linkedin.com/feed/update/urn:li:activity:7511422371392794624" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; word-break: break-all;">https://www.linkedin.com/feed/update/urn:li:activity:7511422371392794624</a></li>
+      </ul>
+    </div>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 24px 0;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">
+        FieldAssist Candidate Portal
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <a href="${portalUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13px;">
+            Open Your Candidate Portal &rarr;
+          </a>
+        </div>
+        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; color: #475569;">
+          Access Code: <strong style="font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 14px; color: #4338ca; letter-spacing: 1px;">${accessCode}</strong>
+        </div>
       </div>
     </div>
 
-    <p style="font-size: 14px; color: #334155;">If you have any questions, feel free to reach out to HR or reply to this email.</p>
-    
-    <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin: 18px 0; font-size: 13px;">
-      You can also check what teammates say about us at: 
-      <a href="${ambitionBoxUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; margin-left: 4px;">AmbitionBox</a> &bull; 
-      <a href="${glassdoorUrl}" target="_blank" style="color: #4f46e5; font-weight: bold; margin-left: 4px;">Glassdoor</a>
-    </div>
-    
-    <p style="margin-top: 24px; margin-bottom: 0;">Thanks &amp; Regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
+    <p style="margin: 16px 0 8px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">Tomorrow, you become part of this story.</p>
+    <p style="margin: 8px 0 20px 0; font-size: 14px; line-height: 1.65; color: #1e293b;">Any last-minute questions? Write to me anytime at <a href="mailto:twinkle.verma@fieldassist.com" style="color: #4f46e5; font-weight: 600;">twinkle.verma@fieldassist.com</a>.</p>
+
+    <p style="margin-top: 24px; margin-bottom: 0;">Warm regards,<br><strong>Twinkle Verma</strong><br><span style="color: #64748b; font-size: 13px;">FieldAssist HR</span></p>
     ${FOOTER_HTML}
   </div>
 </div>`;

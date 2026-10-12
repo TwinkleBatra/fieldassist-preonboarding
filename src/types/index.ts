@@ -154,9 +154,10 @@ export type EmailBlock =
 export interface EmailTemplateDoc {
   id: string; // stageKey, e.g. 'welcome_7d'
   subject: string;
-  greeting: string;
-  blocks: EmailBlock[];
-  signoff: string;
+  greeting?: string;
+  rawText?: string;
+  blocks?: EmailBlock[];
+  signoff?: string;
   updatedAt?: string;
 }
 
