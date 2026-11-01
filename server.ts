@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ override: true });
+// Enforce twinkle.verma@fieldassist.com as the sender From email
+process.env.EMAIL_FROM = '"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>';
 import express from "express";
 import path from "path";
 import fs from "fs";

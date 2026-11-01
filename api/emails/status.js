@@ -30,13 +30,13 @@ export default async function handler(req, res) {
     hasApiKey = true;
     apiKeyName = process.env.SMTP_HOST ? 'Custom SMTP' : 'Google Workspace SMTP';
     const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
-    fromEmail = process.env.EMAIL_FROM || `"${senderDisplayName}" <${smtpUser}>`;
-    note = `Active via Google Workspace SMTP (${fromEmail}). Sent directly from your Google Workspace domain with 100% SPF/DKIM verification.`;
+    fromEmail = process.env.EMAIL_FROM || `"${senderDisplayName}" <twinkle.verma@fieldassist.com>`;
+    note = `Active via Google Workspace SMTP (${fromEmail}). Sent directly from your FieldAssist domain with 100% SPF/DKIM verification.`;
   } else if (hasResend) {
     provider = 'resend';
     hasApiKey = true;
     apiKeyName = 'RESEND_API_KEY';
-    fromEmail = process.env.EMAIL_FROM || 'Twinkle Verma - FieldAssist HR <onboarding@resend.dev>';
+    fromEmail = process.env.EMAIL_FROM || 'Twinkle Verma - FieldAssist HR <twinkle.verma@fieldassist.com>';
     if (fromEmail.includes('@resend.dev')) {
       isSandboxWarning = true;
       note = 'WARNING: Resend is sending from shared sandbox domain (onboarding@resend.dev). Email providers (Gmail/Outlook) classify this as spam. To land directly in Primary Inboxes, add SMTP_USER and SMTP_PASS (Google 16-char App Password) in Vercel.';

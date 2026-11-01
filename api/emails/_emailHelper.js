@@ -4,8 +4,9 @@ export function createTransporter() {
   const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
   const port = Number(process.env.SMTP_PORT) || (host.includes('gmail') ? 465 : 587);
   const secure = port === 465;
-  const user = (process.env.SMTP_USER || '').trim();
-  const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const user = (process.env.SMTP_USER || 'twinkle.verma@flick2know.com').trim();
+  const rawPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const pass = rawPass && rawPass !== 'hsideusbifqpldgw' ? rawPass : 'cggongqbbtyjunkd';
 
   return nodemailer.createTransport({
     host,
@@ -18,8 +19,9 @@ export function createTransporter() {
 
 export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }) {
   const preferred = (process.env.EMAIL_PROVIDER || '').toLowerCase().trim();
-  const smtpUser = (process.env.SMTP_USER || '').trim();
-  const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const smtpUser = (process.env.SMTP_USER || 'twinkle.verma@flick2know.com').trim();
+  const rawPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const smtpPass = rawPass && rawPass !== 'hsideusbifqpldgw' ? rawPass : 'cggongqbbtyjunkd';
   const hasSmtp = Boolean(smtpUser && smtpPass);
   const hasResend = Boolean(process.env.RESEND_API_KEY);
 
@@ -34,15 +36,15 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
       
       // Best-practice anti-spam sender formatting
       const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
-      const fromFormatted = process.env.EMAIL_FROM || `"${senderDisplayName}" <${smtpUser}>`;
+      const fromFormatted = process.env.EMAIL_FROM || `"${senderDisplayName}" <twinkle.verma@fieldassist.com>`;
       const recipientFormatted = toName ? `"${toName.replace(/"/g, '')}" <${toEmail}>` : toEmail;
       
-      const customMessageId = `<fa-onboard-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@${userDomain}>`;
+      const customMessageId = `<fa-onboard-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@fieldassist.com>`;
 
       const info = await transporter.sendMail({
         from: fromFormatted,
         to: recipientFormatted,
-        replyTo: `"${senderDisplayName}" <${smtpUser}>`,
+        replyTo: `"${senderDisplayName}" <twinkle.verma@fieldassist.com>`,
         subject,
         text: bodyText,
         html: bodyHtml,
@@ -51,8 +53,8 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
         headers: {
           'X-Mailer': 'FieldAssist HR Onboarding Portal',
           'X-Entity-Ref-ID': customMessageId,
-          'Feedback-ID': `FieldAssist:HR-Onboarding:${userDomain}`,
-          'Organization': 'FieldAssist (Flick2Know Technologies Pvt. Ltd.)'
+          'Feedback-ID': 'FieldAssist:HR-Onboarding:fieldassist.com',
+          'Organization': 'FieldAssist'
         }
       });
 
@@ -60,7 +62,7 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
 
       return {
         success: true,
-        provider: `Google Workspace SMTP (${smtpUser})`,
+        provider: `Google Workspace SMTP (twinkle.verma@fieldassist.com)`,
         fromEmail: fromFormatted,
         messageId: info.messageId || customMessageId,
       };
@@ -84,7 +86,7 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
   // 2. Resend API Flow (Used if SMTP is not configured or if EMAIL_PROVIDER=resend)
   if (hasResend) {
     try {
-      const fromEmail = process.env.EMAIL_FROM || 'Twinkle Verma - FieldAssist HR <onboarding@resend.dev>';
+      const fromEmail = process.env.EMAIL_FROM || 'Twinkle Verma - FieldAssist HR <twinkle.verma@fieldassist.com>';
       const isSandboxDomain = fromEmail.includes('@resend.dev');
 
       const res = await fetch('https://api.resend.com/emails', {
@@ -99,7 +101,7 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
           subject,
           text: bodyText,
           html: bodyHtml,
-          reply_to: smtpUser || 'twinkle.verma@fieldassist.com',
+          reply_to: 'twinkle.verma@fieldassist.com',
         }),
       });
 

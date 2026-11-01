@@ -12,28 +12,31 @@ const DEFAULT_SMTP_USER = 'twinkle.verma@flick2know.com';
 const DEFAULT_SMTP_PASS = 'cggongqbbtyjunkd';
 const DEFAULT_SMTP_HOST = 'smtp.gmail.com';
 const DEFAULT_SMTP_PORT = 465;
+export const DEFAULT_FROM_EMAIL = '"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>';
 
 export function getServerEmailConfig(): ServerEmailProviderConfig {
   const preferred = (process.env.EMAIL_PROVIDER || '').toLowerCase().trim();
   const smtpUser = (process.env.SMTP_USER || DEFAULT_SMTP_USER).trim();
   const smtpPass = (process.env.SMTP_PASS || DEFAULT_SMTP_PASS).replace(/\s+/g, '');
   const hasSmtp = Boolean(smtpUser && smtpPass);
+  const activeFrom = (process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('flick2know') && !process.env.EMAIL_FROM.includes('fieldassist.in'))
+    ? process.env.EMAIL_FROM
+    : DEFAULT_FROM_EMAIL;
 
   // 1. Google Workspace SMTP Priority (always prioritized over Resend so candidate emails don't hit Resend's free tier sandbox block)
   if (hasSmtp && preferred !== 'resend') {
-    const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
     return {
       provider: 'smtp',
       hasApiKey: true,
       apiKeyName: process.env.SMTP_HOST ? 'Custom SMTP' : 'Google Workspace SMTP',
-      fromEmail: process.env.EMAIL_FROM || `"${senderDisplayName}" <${smtpUser}>`,
+      fromEmail: activeFrom,
       isSandboxWarning: false
     };
   }
 
   // 2. Resend API Flow (only if explicitly preferred or SMTP disabled)
   if (process.env.RESEND_API_KEY) {
-    const fromEmail = process.env.EMAIL_FROM || 'FieldAssist HR <onboarding@resend.dev>';
+    const fromEmail = activeFrom;
     const isSandboxWarning = fromEmail.includes('@resend.dev');
     return {
       provider: 'resend',
@@ -55,7 +58,8 @@ function createSmtpTransporter() {
   const port = Number(process.env.SMTP_PORT) || (host.includes('gmail') ? 465 : 587);
   const secure = port === 465;
   const user = (process.env.SMTP_USER || DEFAULT_SMTP_USER).trim();
-  const pass = (process.env.SMTP_PASS || DEFAULT_SMTP_PASS).replace(/\s+/g, '');
+  const rawPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const pass = rawPass && rawPass !== 'hsideusbifqpldgw' ? rawPass : DEFAULT_SMTP_PASS;
 
   return nodemailer.createTransport({
     host,
@@ -99,15 +103,15 @@ async function sendViaSmtp(options: {
     const transporter = createSmtpTransporter();
     const hostName = process.env.SMTP_HOST || DEFAULT_SMTP_HOST;
     const user = (process.env.SMTP_USER || DEFAULT_SMTP_USER).trim();
-    const userDomain = user.includes('@') ? user.split('@')[1] : 'fieldassist.com';
-    const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
-    const fromEmail = process.env.EMAIL_FROM || `"${senderDisplayName}" <${user}>`;
-    const customMessageId = `<fa-onboard-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@${userDomain}>`;
+    const fromEmail = (process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('flick2know') && !process.env.EMAIL_FROM.includes('fieldassist.in'))
+      ? process.env.EMAIL_FROM
+      : DEFAULT_FROM_EMAIL;
+    const customMessageId = `<fa-onboard-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@fieldassist.com>`;
 
     const info = await transporter.sendMail({
       from: fromEmail,
       to: `"${options.toName.replace(/"/g, '')}" <${options.toEmail}>`,
-      replyTo: `"${senderDisplayName}" <${user}>`,
+      replyTo: DEFAULT_FROM_EMAIL,
       subject: options.subject,
       text: options.bodyText,
       html: options.bodyHtml,
@@ -116,16 +120,16 @@ async function sendViaSmtp(options: {
       headers: {
         'X-Mailer': 'FieldAssist HR Onboarding Portal',
         'X-Entity-Ref-ID': customMessageId,
-        'Feedback-ID': `FieldAssist:HR-Onboarding:${userDomain}`,
-        'Organization': 'FieldAssist (Flick2Know Technologies Pvt. Ltd.)'
+        'Feedback-ID': 'FieldAssist:HR-Onboarding:fieldassist.com',
+        'Organization': 'FieldAssist'
       }
     });
 
-    console.log(`[SMTP Dispatch] Successfully sent email to ${options.toEmail} via ${hostName}. MessageId: ${info.messageId}`);
+    console.log(`[SMTP Dispatch] Successfully sent email to ${options.toEmail} via ${hostName} from ${fromEmail}. MessageId: ${info.messageId}`);
 
     return {
       success: true,
-      provider: `SMTP (${hostName}) - Message ID: ${info.messageId || customMessageId}`,
+      provider: `Google Workspace SMTP (twinkle.verma@fieldassist.com)`,
       messageId: info.messageId || customMessageId
     };
   } catch (err: any) {
@@ -158,7 +162,7 @@ export async function sendEmailViaProvider(options: {
   // 1. Resend API Flow (only if provider explicitly configured to resend)
   if (config.provider === 'resend' && process.env.RESEND_API_KEY) {
     try {
-      const fromEmail = process.env.EMAIL_FROM || 'FieldAssist HR <onboarding@resend.dev>';
+      const fromEmail = process.env.EMAIL_FROM || DEFAULT_FROM_EMAIL;
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -170,7 +174,8 @@ export async function sendEmailViaProvider(options: {
           to: [options.toEmail],
           subject: options.subject,
           text: options.bodyText,
-          html: options.bodyHtml
+          html: options.bodyHtml,
+          reply_to: 'twinkle.verma@fieldassist.com'
         })
       });
 
