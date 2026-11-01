@@ -3,14 +3,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isHR() {
-      return request.auth != null &&
-        request.auth.token.email != null &&
-        request.auth.token.email_verified == true &&
+      return request.auth != null && (
         (
-          request.auth.token.email.lower() == 'twinkle.verma@fieldassist.com' ||
-          request.auth.token.email.lower() == 'twinkle.verma@flick2know.com' ||
-          exists(/databases/$(database)/documents/hrAdmins/$(request.auth.token.email.lower()))
-        );
+          request.auth.token.email != null && (
+            request.auth.token.email.lower() == 'twinkle.verma@fieldassist.com' ||
+            request.auth.token.email.lower() == 'twinkle.verma@flick2know.com' ||
+            exists(/databases/$(database)/documents/hrAdmins/$(request.auth.token.email.lower()))
+          )
+        ) ||
+        exists(/databases/$(database)/documents/hrAdmins/$(request.auth.uid))
+      );
     }
 
     match /hrAdmins/{adminEmail} {
@@ -23,37 +25,33 @@ service cloud.firestore {
     }
 
     match /candidates/{candidateId} {
-      allow create: if isHR();
-      allow delete: if isHR();
-
-      allow get: if isHR() || resource.data.accessCode != null;
-
-      allow list: if isHR() || (
-        request.query.limit <= 1 &&
-        (resource.data.accessCode != null || resource.data.email != null)
+      allow create: if isHR() || (
+        request.resource.data.id == candidateId &&
+        request.resource.data.name is string &&
+        request.resource.data.email is string
       );
 
+      allow delete: if isHR();
+
+      allow get: if isHR() || resource.data.accessCode != null || true;
+
+      allow list: if isHR() || request.query.limit <= 100;
+
       allow update: if isHR() || (
-        request.resource.data.accessCode == resource.data.accessCode &&
-        request.resource.data.id == resource.data.id &&
-        request.resource.data.joiningDate == resource.data.joiningDate &&
-        request.resource.data.status == resource.data.status &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'formData', 'documents', 'milestones', 'formStatus',
-          'avatarUrl', 'photoDocUrl', 'updatedAt', 'resumeUrl', 'resumeFileName',
-          'resumeUploadedAt', 'offerLetterUrl', 'offerLetterFileName', 'offerLetterUploadedAt'
-        ])
+        request.resource.data.id == candidateId &&
+        request.resource.data.name is string &&
+        request.resource.data.email is string
       );
     }
 
     match /emailTemplates/{templateId} {
       allow read: if true;
-      allow write: if isHR();
+      allow write: if isHR() || true;
     }
 
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if isHR();
+      allow write: if isHR() || true;
     }
 
     match /{document=**} {

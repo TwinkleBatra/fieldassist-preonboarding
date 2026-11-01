@@ -104,6 +104,9 @@ export async function saveCandidateToFirestore(candidate: Candidate): Promise<vo
     const candidateRef = doc(db, 'candidates', candidate.id);
     const sanitizedCandidate = sanitizeForFirestore({
       ...candidate,
+      id: candidate.id,
+      name: candidate.name || 'Candidate',
+      email: candidate.email || '',
       updatedAt: new Date().toISOString()
     });
     await setDoc(candidateRef, sanitizedCandidate, { merge: true });
