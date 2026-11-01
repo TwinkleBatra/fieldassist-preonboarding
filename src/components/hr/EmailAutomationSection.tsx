@@ -5,6 +5,7 @@ import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from '../../se
 import { dispatchCandidateEmail, sendTestEmailToCustomRecipient, isCandidateActive } from '../../services/emailDispatcherService';
 import { openGmailComposeForCandidate, buildGmailComposeUrl, markStageAsSentManually } from '../../services/googleWorkspaceEmail';
 import { EmailSettingsModal } from './EmailSettingsModal';
+import { SmtpCredentialsModal } from './SmtpCredentialsModal';
 import { formatJoiningDate } from '../../utils/dateUtils';
 import { toTitleCase } from '../../utils/textUtils';
 
@@ -18,6 +19,7 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
   const [expandedPreview, setExpandedPreview] = useState<EmailStageKey | null>(null);
   const [confirmResendStage, setConfirmResendStage] = useState<EmailStageKey | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSmtpModalOpen, setIsSmtpModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [testSendingTwinkle, setTestSendingTwinkle] = useState(false);
   const [providerStatus, setProviderStatus] = useState<{
@@ -25,6 +27,8 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
     provider: string;
     apiKeyName?: string;
     fromEmail?: string;
+    authEmail?: string;
+    domainMismatch?: boolean;
     isSandboxWarning?: boolean;
     note?: string;
   } | null>(null);
@@ -53,6 +57,8 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
           provider: data.providerConfig.provider,
           apiKeyName: data.providerConfig.apiKeyName,
           fromEmail: data.providerConfig.fromEmail,
+          authEmail: data.providerConfig.authEmail,
+          domainMismatch: Boolean(data.providerConfig.domainMismatch),
           isSandboxWarning: Boolean(data.providerConfig.isSandboxWarning || data.providerConfig.fromEmail?.includes('onboarding@resend.dev')),
           note: data.note
         });
@@ -284,6 +290,24 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                 'Provide your Gmail / Google Workspace email + 16-character App Password (SMTP_USER & SMTP_PASS) in Settings to deliver directly to candidate inboxes.'
               )}
             </p>
+
+            {providerStatus?.domainMismatch && (
+              <div className="mt-2.5 pt-2.5 border-t border-amber-300/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-amber-950 bg-amber-100/70 p-2.5 rounded-lg">
+                <div className="flex items-start gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Google SMTP Sender Notice:</strong> Authenticating as <strong>{providerStatus.authEmail}</strong>. Google automatically overrides the From address to <code>flick2know.com</code> unless <strong>twinkle.verma@fieldassist.com</strong> is added as a Send-As alias in Gmail, or you connect FieldAssist credentials directly.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSmtpModalOpen(true)}
+                  className="px-2.5 py-1 bg-purple-900 hover:bg-black text-white rounded font-bold transition shrink-0 cursor-pointer shadow-xs"
+                >
+                  Configure Sender &rarr;
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -318,6 +342,22 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIsSmtpModalOpen(true)}
+            className={`px-3 py-1.5 border rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              providerStatus?.domainMismatch
+                ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+            }`}
+            title="Configure SMTP sender account & Google App Password"
+          >
+            <Key className="w-3.5 h-3.5 text-purple-700" />
+            <span>Sender Credentials</span>
+            {providerStatus?.domainMismatch && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            )}
+          </button>
+
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
@@ -594,6 +634,19 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
       <EmailSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* SMTP Sender Credentials Modal */}
+      <SmtpCredentialsModal
+        isOpen={isSmtpModalOpen}
+        onClose={() => setIsSmtpModalOpen(false)}
+        currentAuthEmail={providerStatus?.authEmail}
+        currentFromEmail={providerStatus?.fromEmail}
+        domainMismatch={providerStatus?.domainMismatch}
+        onCredentialsUpdated={() => {
+          fetchProviderStatus();
+          showToast('success', 'SMTP credentials updated and verified!');
+        }}
       />
 
     </div>

@@ -9,7 +9,7 @@ import { createServer as createViteServer } from "vite";
 import { google } from "googleapis";
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from "./src/services/emailTemplates";
 import { EmailStageKey, EmailStageLog, Candidate } from "./src/types";
-import { sendEmailViaProvider, getServerEmailConfig, verifySmtpConnection } from "./server/emailScheduler";
+import { sendEmailViaProvider, getServerEmailConfig, verifySmtpConnection, saveStoredSmtpConfig } from "./server/emailScheduler";
 import {
   initializeSpreadsheetTabs,
   syncSingleCandidateToSheets,
@@ -137,14 +137,41 @@ async function startServer() {
   app.post("/api/emails/update-smtp", async (req, res) => {
     try {
       const { smtpUser, smtpPass, smtpHost, smtpPort, emailFrom } = req.body;
-      if (smtpUser) process.env.SMTP_USER = smtpUser.trim();
-      if (smtpPass) process.env.SMTP_PASS = smtpPass.trim().replace(/\s+/g, '');
-      if (smtpHost) process.env.SMTP_HOST = smtpHost.trim();
-      if (smtpPort) process.env.SMTP_PORT = String(smtpPort);
-      if (emailFrom) process.env.EMAIL_FROM = emailFrom.trim();
+      const cleanUser = smtpUser ? smtpUser.trim() : undefined;
+      const cleanPass = smtpPass ? smtpPass.trim().replace(/\s+/g, '') : undefined;
+      const cleanHost = smtpHost ? smtpHost.trim() : undefined;
+      const cleanPort = smtpPort ? Number(smtpPort) : undefined;
+      const cleanFrom = emailFrom ? emailFrom.trim() : undefined;
 
-      const result = await verifySmtpConnection();
-      res.json(result);
+      const testConfig = {
+        smtpUser: cleanUser,
+        smtpPass: cleanPass,
+        smtpHost: cleanHost,
+        smtpPort: cleanPort,
+        emailFrom: cleanFrom,
+      };
+
+      const result = await verifySmtpConnection(testConfig);
+      if (result.success) {
+        if (cleanUser) process.env.SMTP_USER = cleanUser;
+        if (cleanPass) process.env.SMTP_PASS = cleanPass;
+        if (cleanHost) process.env.SMTP_HOST = cleanHost;
+        if (cleanPort) process.env.SMTP_PORT = String(cleanPort);
+        if (cleanFrom) process.env.EMAIL_FROM = cleanFrom;
+
+        saveStoredSmtpConfig({
+          smtpUser: cleanUser || process.env.SMTP_USER || 'twinkle.verma@fieldassist.com',
+          smtpPass: cleanPass || process.env.SMTP_PASS || '',
+          smtpHost: cleanHost || process.env.SMTP_HOST || 'smtp.gmail.com',
+          smtpPort: cleanPort || Number(process.env.SMTP_PORT) || 465,
+          emailFrom: cleanFrom || process.env.EMAIL_FROM || '"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>',
+        });
+      }
+
+      res.json({
+        ...result,
+        providerConfig: getServerEmailConfig()
+      });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err?.message || 'Failed to update SMTP' });
     }

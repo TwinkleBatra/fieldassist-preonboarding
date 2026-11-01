@@ -1,11 +1,51 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 export interface ServerEmailProviderConfig {
   provider: 'resend' | 'smtp' | 'none';
   hasApiKey: boolean;
   apiKeyName?: string;
   fromEmail?: string;
+  authEmail?: string;
+  domainMismatch?: boolean;
   isSandboxWarning?: boolean;
+}
+
+const SMTP_CONFIG_FILE = path.join(process.cwd(), 'smtp_config.json');
+
+export interface StoredSmtpConfig {
+  smtpUser: string;
+  smtpPass: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  emailFrom?: string;
+}
+
+export function loadStoredSmtpConfig(): StoredSmtpConfig {
+  try {
+    if (fs.existsSync(SMTP_CONFIG_FILE)) {
+      const data = fs.readFileSync(SMTP_CONFIG_FILE, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.warn('Could not read smtp_config.json:', err);
+  }
+  return {
+    smtpUser: process.env.SMTP_USER || DEFAULT_SMTP_USER,
+    smtpPass: (process.env.SMTP_PASS && process.env.SMTP_PASS !== 'hsideusbifqpldgw') ? process.env.SMTP_PASS : DEFAULT_SMTP_PASS,
+    smtpHost: process.env.SMTP_HOST || DEFAULT_SMTP_HOST,
+    smtpPort: Number(process.env.SMTP_PORT) || DEFAULT_SMTP_PORT,
+    emailFrom: process.env.EMAIL_FROM || DEFAULT_FROM_EMAIL
+  };
+}
+
+export function saveStoredSmtpConfig(config: StoredSmtpConfig) {
+  try {
+    fs.writeFileSync(SMTP_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not save smtp_config.json:', err);
+  }
 }
 
 const DEFAULT_SMTP_USER = 'twinkle.verma@flick2know.com';
@@ -15,21 +55,32 @@ const DEFAULT_SMTP_PORT = 465;
 export const DEFAULT_FROM_EMAIL = '"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>';
 
 export function getServerEmailConfig(): ServerEmailProviderConfig {
+  const stored = loadStoredSmtpConfig();
   const preferred = (process.env.EMAIL_PROVIDER || '').toLowerCase().trim();
-  const smtpUser = (process.env.SMTP_USER || DEFAULT_SMTP_USER).trim();
-  const smtpPass = (process.env.SMTP_PASS || DEFAULT_SMTP_PASS).replace(/\s+/g, '');
+  const smtpUser = (process.env.SMTP_USER || stored.smtpUser || DEFAULT_SMTP_USER).trim();
+  const rawPass = (process.env.SMTP_PASS || stored.smtpPass || DEFAULT_SMTP_PASS).replace(/\s+/g, '');
+  const smtpPass = rawPass && rawPass !== 'hsideusbifqpldgw' ? rawPass : DEFAULT_SMTP_PASS;
   const hasSmtp = Boolean(smtpUser && smtpPass);
+
   const activeFrom = (process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('flick2know') && !process.env.EMAIL_FROM.includes('fieldassist.in'))
     ? process.env.EMAIL_FROM
-    : DEFAULT_FROM_EMAIL;
+    : (stored.emailFrom || DEFAULT_FROM_EMAIL);
+
+  const domainMismatch = Boolean(
+    smtpUser &&
+    !smtpUser.includes('fieldassist.com') &&
+    activeFrom.includes('fieldassist.com')
+  );
 
   // 1. Google Workspace SMTP Priority (always prioritized over Resend so candidate emails don't hit Resend's free tier sandbox block)
   if (hasSmtp && preferred !== 'resend') {
     return {
       provider: 'smtp',
       hasApiKey: true,
-      apiKeyName: process.env.SMTP_HOST ? 'Custom SMTP' : 'Google Workspace SMTP',
+      apiKeyName: (process.env.SMTP_HOST || stored.smtpHost) ? 'Custom SMTP' : 'Google Workspace SMTP',
       fromEmail: activeFrom,
+      authEmail: smtpUser,
+      domainMismatch,
       isSandboxWarning: false
     };
   }
@@ -43,6 +94,8 @@ export function getServerEmailConfig(): ServerEmailProviderConfig {
       hasApiKey: true,
       apiKeyName: 'RESEND_API_KEY',
       fromEmail,
+      authEmail: smtpUser,
+      domainMismatch,
       isSandboxWarning
     };
   }
@@ -53,12 +106,13 @@ export function getServerEmailConfig(): ServerEmailProviderConfig {
 /**
  * Creates a configured nodemailer transport with support for Gmail / Google Workspace and custom SMTP
  */
-function createSmtpTransporter() {
-  const host = (process.env.SMTP_HOST || DEFAULT_SMTP_HOST).trim();
-  const port = Number(process.env.SMTP_PORT) || (host.includes('gmail') ? 465 : 587);
+function createSmtpTransporter(customConfig?: Partial<StoredSmtpConfig>) {
+  const stored = loadStoredSmtpConfig();
+  const host = (customConfig?.smtpHost || process.env.SMTP_HOST || stored.smtpHost || DEFAULT_SMTP_HOST).trim();
+  const port = Number(customConfig?.smtpPort || process.env.SMTP_PORT || stored.smtpPort) || (host.includes('gmail') ? 465 : 587);
   const secure = port === 465;
-  const user = (process.env.SMTP_USER || DEFAULT_SMTP_USER).trim();
-  const rawPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const user = (customConfig?.smtpUser || process.env.SMTP_USER || stored.smtpUser || DEFAULT_SMTP_USER).trim();
+  const rawPass = (customConfig?.smtpPass || process.env.SMTP_PASS || stored.smtpPass || '').replace(/\s+/g, '');
   const pass = rawPass && rawPass !== 'hsideusbifqpldgw' ? rawPass : DEFAULT_SMTP_PASS;
 
   return nodemailer.createTransport({
@@ -75,11 +129,12 @@ function createSmtpTransporter() {
 /**
  * Checks if the SMTP connection credentials work
  */
-export async function verifySmtpConnection(): Promise<{ success: boolean; message: string }> {
+export async function verifySmtpConnection(customConfig?: Partial<StoredSmtpConfig>): Promise<{ success: boolean; message: string }> {
   try {
-    const transporter = createSmtpTransporter();
+    const transporter = createSmtpTransporter(customConfig);
     await transporter.verify();
-    return { success: true, message: `SMTP connection to ${process.env.SMTP_HOST || DEFAULT_SMTP_HOST} verified successfully.` };
+    const host = customConfig?.smtpHost || process.env.SMTP_HOST || DEFAULT_SMTP_HOST;
+    return { success: true, message: `SMTP connection to ${host} verified successfully.` };
   } catch (err: any) {
     console.error('SMTP verification error:', err);
     return {
