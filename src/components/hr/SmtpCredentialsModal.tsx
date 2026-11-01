@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Key, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, ExternalLink, Mail, Info, Eye, EyeOff } from 'lucide-react';
+import { X, Key, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, ExternalLink, Mail, Info, Eye, EyeOff, Server, Globe } from 'lucide-react';
 
 interface SmtpCredentialsModalProps {
   isOpen: boolean;
@@ -10,6 +10,8 @@ interface SmtpCredentialsModalProps {
   onCredentialsUpdated: () => void;
 }
 
+type ProviderPreset = 'outlook' | 'gmail' | 'custom';
+
 export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
   isOpen,
   onClose,
@@ -18,18 +20,35 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
   domainMismatch = true,
   onCredentialsUpdated,
 }) => {
-  const [smtpUser, setSmtpUser] = useState(
-    currentAuthEmail.includes('fieldassist.com') ? currentAuthEmail : 'twinkle.verma@fieldassist.com'
-  );
+  // Determine initial preset based on current configuration
+  const [providerPreset, setProviderPreset] = useState<ProviderPreset>('outlook');
+  const [smtpUser, setSmtpUser] = useState('twinkle.verma@fieldassist.com');
   const [smtpPass, setSmtpPass] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [emailFrom, setEmailFrom] = useState(currentFromEmail);
-  const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
-  const [smtpPort, setSmtpPort] = useState(465);
+  const [emailFrom, setEmailFrom] = useState('"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>');
+  const [smtpHost, setSmtpHost] = useState('smtp.office365.com');
+  const [smtpPort, setSmtpPort] = useState(587);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   if (!isOpen) return null;
+
+  const handleSelectPreset = (preset: ProviderPreset) => {
+    setProviderPreset(preset);
+    setTestResult(null);
+
+    if (preset === 'outlook') {
+      setSmtpHost('smtp.office365.com');
+      setSmtpPort(587);
+      setSmtpUser('twinkle.verma@fieldassist.com');
+      setEmailFrom('"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>');
+    } else if (preset === 'gmail') {
+      setSmtpHost('smtp.gmail.com');
+      setSmtpPort(465);
+      setSmtpUser('twinkle.verma@flick2know.com');
+      setEmailFrom('"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>');
+    }
+  };
 
   const handleTestAndSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,13 +72,13 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
       if (data.success) {
         setTestResult({
           success: true,
-          message: 'Connection verified and saved successfully! Emails will now send using this account.'
+          message: `Connected successfully to ${smtpHost}! Emails will now be sent directly from ${smtpUser}.`
         });
         onCredentialsUpdated();
       } else {
         setTestResult({
           success: false,
-          message: data.message || 'Failed to authenticate with Google SMTP. Please verify the 16-character App Password.'
+          message: data.message || `Failed to authenticate with ${smtpHost}. Please verify your credentials or App Password.`
         });
       }
     } catch (err: any) {
@@ -76,15 +95,15 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-md">
-              <Key className="w-5 h-5 text-purple-200" />
+              <Mail className="w-5 h-5 text-blue-200" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Email Sender &amp; SMTP Credentials</h3>
-              <p className="text-xs text-purple-200 mt-0.5">
-                Configure direct Google Workspace delivery for FieldAssist onboarding emails
+              <h3 className="font-bold text-base text-white">FieldAssist Email &amp; SMTP Settings</h3>
+              <p className="text-xs text-blue-200 mt-0.5">
+                Connect your Microsoft 365 Outlook account to send natively from <strong>twinkle.verma@fieldassist.com</strong>
               </p>
             </div>
           </div>
@@ -98,46 +117,92 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
 
         {/* Content Body */}
         <div className="p-6 overflow-y-auto space-y-5 text-xs text-slate-700">
-          {/* Important Explanatory Banner */}
-          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 space-y-2.5">
+          {/* Outlook Notice */}
+          <div className="p-4 rounded-xl bg-blue-50/90 border border-blue-200 text-blue-950 space-y-2">
             <div className="flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <Info className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <span className="font-bold text-amber-900 text-xs block">
-                  Why Google shows the sender as <code>flick2know.com</code>:
+                <span className="font-bold text-blue-950 text-xs block">
+                  Microsoft 365 Outlook Configuration Detected:
                 </span>
-                <p className="text-[11px] leading-relaxed text-amber-900/90">
-                  Google&apos;s SMTP servers (<code>smtp.gmail.com</code>) enforce anti-spoofing security. If you authenticate using your <strong>flick2know.com</strong> credentials, Google automatically rewrites the <code>From:</code> header on delivered emails to <code>flick2know.com</code> unless one of the two steps below is completed:
+                <p className="text-[11px] leading-relaxed text-blue-900/90">
+                  Because <code>fieldassist.com</code> is hosted on <strong>Microsoft 365 Outlook</strong> (not Google Workspace), using Google&apos;s SMTP caused emails to be delivered from <code>flick2know.com</code>. Connecting to Microsoft 365 SMTP below ensures all candidate emails originate directly from <strong>twinkle.verma@fieldassist.com</strong>.
                 </p>
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1 text-[11px]">
-              <div className="bg-white/90 p-3 rounded-lg border border-amber-200 shadow-xs">
-                <span className="font-bold text-purple-900 block mb-1">
-                  Option 1: Connect fieldassist.com (Direct)
-                </span>
-                <p className="text-slate-600 leading-normal mb-2">
-                  Generate a 16-character Google App Password for <strong>twinkle.verma@fieldassist.com</strong> and enter it below.
+          {/* Provider Presets */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+              Select Email Service Provider
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleSelectPreset('outlook')}
+                className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                  providerPreset === 'outlook'
+                    ? 'border-blue-600 bg-blue-50/80 text-blue-950 ring-2 ring-blue-500/30'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-xs flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-blue-600" />
+                    Microsoft 365
+                  </span>
+                  {providerPreset === 'outlook' && (
+                    <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded">Active</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Outlook (fieldassist.com)
                 </p>
-                <a
-                  href="https://myaccount.google.com/apppasswords"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 hover:text-purple-900 underline"
-                >
-                  Generate Google App Password <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
+              </button>
 
-              <div className="bg-white/90 p-3 rounded-lg border border-amber-200 shadow-xs">
-                <span className="font-bold text-purple-900 block mb-1">
-                  Option 2: Add Alias in Gmail (30 seconds)
-                </span>
-                <p className="text-slate-600 leading-normal">
-                  In your <code>twinkle.verma@flick2know.com</code> Gmail &rarr; <strong>Settings &rarr; Accounts &rarr; &quot;Send mail as&quot;</strong> &rarr; Click <strong>&quot;Add another email address&quot;</strong>, add <code>twinkle.verma@fieldassist.com</code> and verify.
+              <button
+                type="button"
+                onClick={() => handleSelectPreset('gmail')}
+                className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                  providerPreset === 'gmail'
+                    ? 'border-purple-600 bg-purple-50/80 text-purple-950 ring-2 ring-purple-500/30'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-xs flex items-center gap-1.5">
+                    <Server className="w-3.5 h-3.5 text-purple-600" />
+                    Google Workspace
+                  </span>
+                  {providerPreset === 'gmail' && (
+                    <span className="text-[9px] bg-purple-600 text-white font-bold px-1.5 py-0.5 rounded">Active</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Gmail (flick2know.com)
                 </p>
-              </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectPreset('custom')}
+                className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                  providerPreset === 'custom'
+                    ? 'border-slate-800 bg-slate-100 text-slate-900 ring-2 ring-slate-400'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-xs flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-slate-600" />
+                    Custom SMTP
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Manual Host &amp; Port
+                </p>
+              </button>
             </div>
           </div>
 
@@ -146,7 +211,7 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                  Google Workspace Account (SMTP User)
+                  {providerPreset === 'outlook' ? 'Microsoft 365 Account Email' : 'Account Email (SMTP User)'}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -156,17 +221,17 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
                     onChange={(e) => setSmtpUser(e.target.value)}
                     required
                     placeholder="twinkle.verma@fieldassist.com"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600/30"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600/30"
                   />
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Must be your Google email address with 2-Step Verification enabled.
+                  Your official FieldAssist email address.
                 </p>
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                  16-Character Google App Password
+                  {providerPreset === 'outlook' ? 'Microsoft Password / App Password' : 'App Password'}
                 </label>
                 <div className="relative">
                   <Key className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -175,8 +240,8 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
                     value={smtpPass}
                     onChange={(e) => setSmtpPass(e.target.value)}
                     required
-                    placeholder="xxxx xxxx xxxx xxxx"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-9 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600/30"
+                    placeholder={providerPreset === 'outlook' ? 'Your Microsoft 365 password or App Password' : 'xxxx xxxx xxxx xxxx'}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-9 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600/30"
                   />
                   <button
                     type="button"
@@ -187,7 +252,21 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Created at Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App passwords.
+                  {providerPreset === 'outlook' ? (
+                    <span>
+                      If 2FA is active on your Microsoft account, create an App Password at{' '}
+                      <a
+                        href="https://mysignins.microsoft.com/security-info"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-700 underline font-bold inline-flex items-center gap-0.5"
+                      >
+                        Microsoft Security Info <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </span>
+                  ) : (
+                    'Generated at Google Account > Security > App Passwords.'
+                  )}
                 </p>
               </div>
             </div>
@@ -203,7 +282,7 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
                   onChange={(e) => setEmailFrom(e.target.value)}
                   required
                   placeholder='"Twinkle Verma - FieldAssist HR" <twinkle.verma@fieldassist.com>'
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600/30 font-sans"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600/30 font-sans"
                 />
               </div>
 
@@ -211,12 +290,31 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
                   SMTP Host &amp; Port
                 </label>
-                <input
-                  type="text"
-                  value={`${smtpHost}:${smtpPort}`}
-                  readOnly
-                  className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 cursor-not-allowed"
-                />
+                {providerPreset === 'custom' ? (
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={smtpHost}
+                      onChange={(e) => setSmtpHost(e.target.value)}
+                      placeholder="smtp.example.com"
+                      className="w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs font-mono"
+                    />
+                    <input
+                      type="number"
+                      value={smtpPort}
+                      onChange={(e) => setSmtpPort(Number(e.target.value))}
+                      placeholder="587"
+                      className="w-1/3 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs font-mono"
+                    />
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={`${smtpHost}:${smtpPort}`}
+                    readOnly
+                    className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 cursor-not-allowed"
+                  />
+                )}
               </div>
             </div>
 
@@ -253,7 +351,7 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
               <button
                 type="submit"
                 disabled={isTesting || !smtpPass.trim()}
-                className="px-5 py-2 bg-purple-900 hover:bg-black text-white rounded-xl font-bold transition text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                className="px-5 py-2 bg-blue-900 hover:bg-black text-white rounded-xl font-bold transition text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 {isTesting ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />

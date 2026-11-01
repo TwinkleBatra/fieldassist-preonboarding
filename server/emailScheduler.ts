@@ -72,12 +72,20 @@ export function getServerEmailConfig(): ServerEmailProviderConfig {
     activeFrom.includes('fieldassist.com')
   );
 
-  // 1. Google Workspace SMTP Priority (always prioritized over Resend so candidate emails don't hit Resend's free tier sandbox block)
+  const host = (process.env.SMTP_HOST || stored.smtpHost || DEFAULT_SMTP_HOST).trim();
+  let apiKeyName = 'Google Workspace SMTP';
+  if (host.includes('office365') || host.includes('outlook')) {
+    apiKeyName = 'Microsoft 365 Outlook SMTP';
+  } else if (process.env.SMTP_HOST || stored.smtpHost) {
+    apiKeyName = 'Custom SMTP';
+  }
+
+  // 1. SMTP Priority (Microsoft 365 Outlook or Google Workspace)
   if (hasSmtp && preferred !== 'resend') {
     return {
       provider: 'smtp',
       hasApiKey: true,
-      apiKeyName: (process.env.SMTP_HOST || stored.smtpHost) ? 'Custom SMTP' : 'Google Workspace SMTP',
+      apiKeyName,
       fromEmail: activeFrom,
       authEmail: smtpUser,
       domainMismatch,
@@ -104,12 +112,13 @@ export function getServerEmailConfig(): ServerEmailProviderConfig {
 }
 
 /**
- * Creates a configured nodemailer transport with support for Gmail / Google Workspace and custom SMTP
+ * Creates a configured nodemailer transport with support for Microsoft 365 Outlook, Gmail / Google Workspace and custom SMTP
  */
 function createSmtpTransporter(customConfig?: Partial<StoredSmtpConfig>) {
   const stored = loadStoredSmtpConfig();
   const host = (customConfig?.smtpHost || process.env.SMTP_HOST || stored.smtpHost || DEFAULT_SMTP_HOST).trim();
-  const port = Number(customConfig?.smtpPort || process.env.SMTP_PORT || stored.smtpPort) || (host.includes('gmail') ? 465 : 587);
+  const defaultPort = (host.includes('office365') || host.includes('outlook')) ? 587 : (host.includes('gmail') ? 465 : 587);
+  const port = Number(customConfig?.smtpPort || process.env.SMTP_PORT || stored.smtpPort) || defaultPort;
   const secure = port === 465;
   const user = (customConfig?.smtpUser || process.env.SMTP_USER || stored.smtpUser || DEFAULT_SMTP_USER).trim();
   const rawPass = (customConfig?.smtpPass || process.env.SMTP_PASS || stored.smtpPass || '').replace(/\s+/g, '');
@@ -121,6 +130,7 @@ function createSmtpTransporter(customConfig?: Partial<StoredSmtpConfig>) {
     secure,
     auth: { user, pass },
     tls: {
+      ciphers: 'SSLv3',
       rejectUnauthorized: false
     }
   });
@@ -182,16 +192,24 @@ async function sendViaSmtp(options: {
 
     console.log(`[SMTP Dispatch] Successfully sent email to ${options.toEmail} via ${hostName} from ${fromEmail}. MessageId: ${info.messageId}`);
 
+    const isOutlook = hostName.includes('office365') || hostName.includes('outlook');
+    const providerLabel = isOutlook
+      ? `Microsoft 365 Outlook SMTP (${user})`
+      : `Google Workspace SMTP (${user})`;
+
     return {
       success: true,
-      provider: `Google Workspace SMTP (twinkle.verma@fieldassist.com)`,
+      provider: providerLabel,
       messageId: info.messageId || customMessageId
     };
   } catch (err: any) {
     console.error('Error sending email via SMTP:', err);
     let friendlyError = err.message || 'SMTP dispatch failed';
+    const isOutlook = (process.env.SMTP_HOST || '').includes('office365') || (process.env.SMTP_HOST || '').includes('outlook');
     if (err.code === 'EAUTH' || (err.response && err.response.includes('Username and Password not accepted'))) {
-      friendlyError = 'Google SMTP Authentication failed: Please verify your Google email and 16-character App Password (ensure 2-Step Verification is enabled in Google Account).';
+      friendlyError = isOutlook
+        ? 'Microsoft 365 Authentication failed: Please verify your Microsoft 365 password or Microsoft App Password (if MFA is enabled).'
+        : 'Google SMTP Authentication failed: Please verify your Google email and 16-character App Password (ensure 2-Step Verification is enabled in Google Account).';
     }
     return {
       success: false,

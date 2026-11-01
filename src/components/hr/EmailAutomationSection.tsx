@@ -3,7 +3,7 @@ import { Mail, Clock, CheckCircle2, AlertCircle, Play, Eye, RefreshCw, Send, Spa
 import { Candidate, EmailStageKey, EmailStageLog } from '../../types';
 import { EMAIL_TEMPLATES, extractFirstName, calculateTargetDate } from '../../services/emailTemplates';
 import { dispatchCandidateEmail, sendTestEmailToCustomRecipient, isCandidateActive } from '../../services/emailDispatcherService';
-import { openGmailComposeForCandidate, buildGmailComposeUrl, markStageAsSentManually } from '../../services/googleWorkspaceEmail';
+import { openGmailComposeForCandidate, buildGmailComposeUrl, buildOutlookComposeUrl, markStageAsSentManually } from '../../services/googleWorkspaceEmail';
 import { EmailSettingsModal } from './EmailSettingsModal';
 import { SmtpCredentialsModal } from './SmtpCredentialsModal';
 import { formatJoiningDate } from '../../utils/dateUtils';
@@ -246,8 +246,8 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
               <span className="font-bold">
                 {providerStatus?.isSandboxWarning
                   ? '⚠️ Emails Sending from Resend Sandbox (Landing in Spam)'
-                  : providerStatus?.provider === 'smtp'
-                  ? 'Google Workspace SMTP Active (Primary Inbox Delivery)'
+                  : providerStatus?.apiKeyName
+                  ? `${providerStatus.apiKeyName} Active`
                   : providerStatus?.hasApiKey
                   ? 'Live Email Service Active'
                   : 'Live SMTP Email Delivery Ready for Setup'}
@@ -282,12 +282,12 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                 <>
                   Emails are currently routing through <strong>onboarding@resend.dev</strong> because <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">RESEND_API_KEY</code> is active without a verified custom domain. <strong>Google &amp; Outlook automatically flag onboarding@resend.dev as spam.</strong>
                   <br />
-                  <span className="font-semibold text-purple-900">How to fix:</span> Add <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_USER=twinkle.verma@fieldassist.com</code> and <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_PASS=&lt;16-char-app-password&gt;</code> in your Vercel Project Settings &rarr; Environment Variables. The app will immediately send from your verified Google Workspace account and land in the Primary Inbox.
+                  <span className="font-semibold text-purple-900">How to fix:</span> Add <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_USER=twinkle.verma@fieldassist.com</code> and <code className="bg-purple-100 text-purple-900 px-1 py-0.5 rounded font-mono text-[10px]">SMTP_PASS=&lt;password&gt;</code> in Settings to send directly via Microsoft 365 Outlook.
                 </>
               ) : providerStatus?.hasApiKey ? (
-                `Delivering directly via ${providerStatus.provider}. Sender: ${providerStatus.fromEmail}. SPF/DKIM aligned with 0% spam score.`
+                `Delivering via ${providerStatus.apiKeyName || providerStatus.provider}. Sender: ${providerStatus.fromEmail}. SPF/DKIM aligned with 0% spam score.`
               ) : (
-                'Provide your Gmail / Google Workspace email + 16-character App Password (SMTP_USER & SMTP_PASS) in Settings to deliver directly to candidate inboxes.'
+                'Provide your Microsoft 365 Outlook email + password in Settings to deliver directly to candidate inboxes.'
               )}
             </p>
 
@@ -296,15 +296,15 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                 <div className="flex items-start gap-1.5">
                   <AlertCircle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
                   <span>
-                    <strong>Google SMTP Sender Notice:</strong> Authenticating as <strong>{providerStatus.authEmail}</strong>. Google automatically overrides the From address to <code>flick2know.com</code> unless <strong>twinkle.verma@fieldassist.com</strong> is added as a Send-As alias in Gmail, or you connect FieldAssist credentials directly.
+                    <strong>Microsoft 365 Outlook Notice:</strong> <code>twinkle.verma@fieldassist.com</code> is an Outlook account. The server is currently routed through Google SMTP (<code>{providerStatus.authEmail}</code>). Connect your Microsoft 365 Outlook SMTP credentials to deliver directly from <strong>twinkle.verma@fieldassist.com</strong>, or click <strong>Outlook Send</strong> on any stage for 1-click web dispatch.
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsSmtpModalOpen(true)}
-                  className="px-2.5 py-1 bg-purple-900 hover:bg-black text-white rounded font-bold transition shrink-0 cursor-pointer shadow-xs"
+                  className="px-2.5 py-1 bg-blue-900 hover:bg-black text-white rounded font-bold transition shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
                 >
-                  Configure Sender &rarr;
+                  Connect Outlook SMTP &rarr;
                 </button>
               </div>
             )}
@@ -477,24 +477,46 @@ export const EmailAutomationSection: React.FC<EmailAutomationSectionProps> = ({ 
                   </button>
 
                   {/* Open in Gmail (Google Workspace direct dispatch) */}
+                  {/* Open in Outlook (FieldAssist Microsoft 365 direct dispatch) */}
+                  <a
+                    href={buildOutlookComposeUrl({
+                      toEmail: candidate.email,
+                      subject: (tpl.getSubject ? tpl.getSubject(firstName, candidate) : tpl.subject).replace(/{{Name}}|{{firstName}}/g, firstName),
+                      bodyText: tpl.getBodyText(firstName, candidate)
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      markStageAsSentManually(candidate.id, key, 'Outlook Web (Microsoft 365)');
+                      showToast('info', 'Opened pre-filled email in FieldAssist Outlook Web. Hit Send in Outlook to deliver from twinkle.verma@fieldassist.com.');
+                      onCandidateUpdated();
+                    }}
+                    className={`px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${!active ? 'pointer-events-none opacity-50' : ''}`}
+                    title="Open directly in your FieldAssist Outlook account (outlook.office.com) to review and send"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Outlook Send</span>
+                  </a>
+
+                  {/* Open in Gmail (Google direct dispatch) */}
                   <a
                     href={buildGmailComposeUrl({
                       toEmail: candidate.email,
-                      subject: tpl.subject,
+                      subject: (tpl.getSubject ? tpl.getSubject(firstName, candidate) : tpl.subject).replace(/{{Name}}|{{firstName}}/g, firstName),
                       bodyText: tpl.getBodyText(firstName, candidate)
                     })}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => {
                       markStageAsSentManually(candidate.id, key, 'Gmail Compose (Google Workspace)');
-                      showToast('info', 'Opened pre-filled email in Gmail web compose. Hit Send in Gmail to deliver from your Google Workspace account.');
+                      showToast('info', 'Opened pre-filled email in Gmail web compose. Hit Send in Gmail to deliver.');
                       onCandidateUpdated();
                     }}
-                    className={`px-2.5 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${!active ? 'pointer-events-none opacity-50' : ''}`}
-                    title="Open directly in your Google Workspace / Gmail account to review and send"
+                    className={`px-2 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${!active ? 'pointer-events-none opacity-50' : ''}`}
+                    title="Open in Gmail web compose"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-red-600" />
-                    <span>Gmail Send</span>
+                    <ExternalLink className="w-3 h-3 text-slate-500" />
+                    <span>Gmail</span>
                   </a>
 
                   {/* Send / Resend Button */}

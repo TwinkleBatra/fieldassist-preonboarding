@@ -144,6 +144,93 @@ export function markStageAsSentManually(
 }
 
 /**
+ * Creates a formatted Microsoft 365 Outlook Web Compose URL
+ * Opens directly in Outlook on the web with to, subject, and body prefilled.
+ */
+export function buildOutlookComposeUrl(options: {
+  toEmail: string;
+  subject: string;
+  bodyText: string;
+}): string {
+  const params = new URLSearchParams({
+    to: options.toEmail,
+    subject: options.subject,
+    body: options.bodyText,
+  });
+
+  return `https://outlook.office.com/mail/deeplink/compose?${params.toString()}`;
+}
+
+/**
+ * Opens Microsoft 365 Outlook web compose in a new tab for a specific stage
+ */
+export function openOutlookComposeForCandidate(candidateId: string, stageKey: EmailStageKey): { success: boolean; url: string } {
+  const candidate = getCandidateById(candidateId);
+  if (!candidate) {
+    throw new Error('Candidate not found');
+  }
+
+  const template = EMAIL_TEMPLATES[stageKey];
+  if (!template) {
+    throw new Error(`Invalid stage template: ${stageKey}`);
+  }
+
+  const firstName = extractFirstName(candidate.name);
+  const bodyText = template.getBodyText(firstName, candidate);
+  const subject = (template.getSubject ? template.getSubject(firstName, candidate) : template.subject).replace(/{{Name}}|{{firstName}}/g, firstName);
+
+  const url = buildOutlookComposeUrl({
+    toEmail: candidate.email,
+    subject,
+    bodyText,
+  });
+
+  // Open Outlook web client
+  if (typeof window !== 'undefined') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  // Record that HR prepared/opened this in Outlook
+  const nowIso = new Date().toISOString();
+  const existingLog = candidate.emailAutomation?.stages?.[stageKey];
+  const targetDate = calculateTargetDate(candidate.joiningDate, template.daysBeforeJoining);
+
+  const updatedLog: EmailStageLog = {
+    id: existingLog?.id || `email-${candidate.id}-${stageKey}`,
+    stageKey,
+    stageName: template.stageName,
+    daysBeforeJoining: template.daysBeforeJoining,
+    targetDate,
+    recipientEmail: candidate.email,
+    recipientName: candidate.name,
+    subject,
+    status: 'Sent',
+    sentAt: nowIso,
+    triggeredBy: 'hr_manual',
+    provider: 'Outlook Web (Microsoft 365)',
+    logs: [
+      ...(existingLog?.logs || []),
+      `[${new Date(nowIso).toLocaleTimeString()}] Opened in Outlook Web for direct FieldAssist dispatch`
+    ]
+  };
+
+  const updatedCandidate: Candidate = {
+    ...candidate,
+    emailAutomation: {
+      stages: {
+        ...(candidate.emailAutomation?.stages || {}),
+        [stageKey]: updatedLog
+      } as Record<EmailStageKey, EmailStageLog>,
+      lastEvaluatedAt: nowIso
+    }
+  };
+
+  saveCandidate(updatedCandidate);
+
+  return { success: true, url };
+}
+
+/**
  * Creates a mailto link fallback
  */
 export function buildMailtoUrl(options: {
@@ -153,3 +240,4 @@ export function buildMailtoUrl(options: {
 }): string {
   return `mailto:${encodeURIComponent(options.toEmail)}?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(options.bodyText)}`;
 }
+
