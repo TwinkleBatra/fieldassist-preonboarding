@@ -1,10 +1,11 @@
 import nodemailer from 'nodemailer';
 
 export function createTransporter() {
-  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
-  const port = Number(process.env.SMTP_PORT) || (host.includes('gmail') ? 465 : 587);
+  const host = (process.env.SMTP_HOST || 'smtp.office365.com').trim();
+  const defaultPort = (host.includes('office365') || host.includes('outlook')) ? 587 : (host.includes('gmail') ? 465 : 587);
+  const port = Number(process.env.SMTP_PORT) || defaultPort;
   const secure = port === 465;
-  const user = (process.env.SMTP_USER || 'twinkle.verma@flick2know.com').trim();
+  const user = (process.env.SMTP_USER || 'twinkle.verma@fieldassist.com').trim();
   const rawPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
   const pass = rawPass && rawPass !== 'hsideusbifqpldgw' ? rawPass : 'cggongqbbtyjunkd';
 
@@ -13,26 +14,27 @@ export function createTransporter() {
     port,
     secure,
     auth: { user, pass },
-    tls: { rejectUnauthorized: false },
+    tls: {
+      ciphers: 'SSLv3',
+      rejectUnauthorized: false
+    },
   });
 }
 
 export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }) {
   const preferred = (process.env.EMAIL_PROVIDER || '').toLowerCase().trim();
-  const smtpUser = (process.env.SMTP_USER || 'twinkle.verma@flick2know.com').trim();
+  const host = (process.env.SMTP_HOST || 'smtp.office365.com').trim();
+  const smtpUser = (process.env.SMTP_USER || 'twinkle.verma@fieldassist.com').trim();
   const rawPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
   const smtpPass = rawPass && rawPass !== 'hsideusbifqpldgw' ? rawPass : 'cggongqbbtyjunkd';
   const hasSmtp = Boolean(smtpUser && smtpPass);
   const hasResend = Boolean(process.env.RESEND_API_KEY);
 
-  // 1. SMTP Priority (Google Workspace / Gmail or custom SMTP)
-  // Google Workspace SMTP with @fieldassist.com guarantees 100% SPF/DKIM/DMARC alignment.
-  // Resend's free sandbox (onboarding@resend.dev) is automatically flagged as spam by Google and Outlook.
+  // 1. SMTP Priority (Microsoft 365 Outlook or Google Workspace)
   if (hasSmtp && preferred !== 'resend') {
     try {
       const transporter = createTransporter();
-      const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-      const userDomain = smtpUser.includes('@') ? smtpUser.split('@')[1] : 'fieldassist.com';
+      const isOutlook = host.includes('office365') || host.includes('outlook');
       
       // Best-practice anti-spam sender formatting
       const senderDisplayName = 'Twinkle Verma - FieldAssist HR';
@@ -58,11 +60,11 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
         }
       });
 
-      console.log(`[Google SMTP] Sent from ${fromFormatted} to ${toEmail}. Message ID: ${info.messageId || customMessageId}`);
+      console.log(`[SMTP] Sent from ${fromFormatted} to ${toEmail} via ${host}. Message ID: ${info.messageId || customMessageId}`);
 
       return {
         success: true,
-        provider: `Google Workspace SMTP (twinkle.verma@fieldassist.com)`,
+        provider: isOutlook ? `Microsoft 365 Outlook SMTP (${smtpUser})` : `Google Workspace SMTP (${smtpUser})`,
         fromEmail: fromFormatted,
         messageId: info.messageId || customMessageId,
       };
@@ -70,8 +72,11 @@ export async function sendEmail({ toEmail, toName, subject, bodyText, bodyHtml }
       console.error('SMTP send error:', err);
       if (!hasResend) {
         let friendly = err.message || 'SMTP delivery failed';
+        const isOutlook = host.includes('office365') || host.includes('outlook');
         if (err.code === 'EAUTH') {
-          friendly = 'Google SMTP Authentication failed: Please verify your Google email and 16-character App Password.';
+          friendly = isOutlook
+            ? 'Microsoft 365 Authentication failed: Please verify your Microsoft password or App Password.'
+            : 'Google SMTP Authentication failed: Please verify your Google email and 16-character App Password.';
         }
         return {
           success: false,

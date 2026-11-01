@@ -206,7 +206,9 @@ async function sendViaSmtp(options: {
     console.error('Error sending email via SMTP:', err);
     let friendlyError = err.message || 'SMTP dispatch failed';
     const isOutlook = (process.env.SMTP_HOST || '').includes('office365') || (process.env.SMTP_HOST || '').includes('outlook');
-    if (err.code === 'EAUTH' || (err.response && err.response.includes('Username and Password not accepted'))) {
+    if (err.response && err.response.includes('5.7.139')) {
+      friendlyError = 'Microsoft 365 Error (5.7.139): Authenticated SMTP is disabled for your tenant by your IT admin. Use the "Outlook Send" button to send via Outlook Web, or ask your IT admin to enable Authenticated SMTP for your mailbox.';
+    } else if (err.code === 'EAUTH' || (err.response && err.response.includes('Username and Password not accepted') || (err.response && err.response.includes('535')))) {
       friendlyError = isOutlook
         ? 'Microsoft 365 Authentication failed: Please verify your Microsoft 365 password or Microsoft App Password (if MFA is enabled).'
         : 'Google SMTP Authentication failed: Please verify your Google email and 16-character App Password (ensure 2-Step Verification is enabled in Google Account).';

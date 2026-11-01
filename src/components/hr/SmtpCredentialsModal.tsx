@@ -68,11 +68,23 @@ export const SmtpCredentialsModal: React.FC<SmtpCredentialsModalProps> = ({
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+      } else {
+        const text = await res.text().catch(() => '');
+        if (res.status === 404 || text.includes('The page could not be found')) {
+          throw new Error('Endpoint /api/emails/update-smtp was not found. Please redeploy the latest code on Vercel.');
+        } else {
+          throw new Error(`Server returned HTTP ${res.status}: ${text.slice(0, 100)}`);
+        }
+      }
+
       if (data.success) {
         setTestResult({
           success: true,
-          message: `Connected successfully to ${smtpHost}! Emails will now be sent directly from ${smtpUser}.`
+          message: data.message || `Connected successfully to ${smtpHost}! Emails will now be sent directly from ${smtpUser}.`
         });
         onCredentialsUpdated();
       } else {

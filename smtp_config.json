@@ -1,0 +1,7 @@
+{
+  "smtpUser": "twinkle.verma@flick2know.com",
+  "smtpPass": "hsid eusb ifqp ldgw",
+  "smtpHost": "smtp.gmail.com",
+  "smtpPort": 587,
+  "emailFrom": "\"Twinkle Verma - FieldAssist HR\" <twinkle.verma@fieldassist.com>"
+}
